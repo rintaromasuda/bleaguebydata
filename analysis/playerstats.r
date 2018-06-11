@@ -64,7 +64,18 @@ loadPlayerStats <- function(fileName) {
   
   df$MIN <- sapply(str_split(df$MIN_STR, ":"), minStrToMinDec)
   df$MINPG <- sapply(str_split(df$MINPG_STR, ":"), minStrToMinDec)
+
+  df$PPM <- round(df$PTS / df$MIN, 2)
+  df$EFGP <- round((df$FGM + 0.5 * df$TPGM) / df$FGA, 2)
+  df$TSP <- round(df$PTS / (2 * (df$FGA + (0.44 * df$FTA))) , 2)
+
+  df$TOPG <- round(df$TO / df$G, 2)
+  df$ORPG <- round(df$OR / df$G, 2)
+  df$DRPG <- round(df$DR / df$G, 2)
   
+  df$STPG <- round(df$ST / df$G, 2)
+  df$BSPG <- round(df$BS / df$G, 2)  
+      
   return(df)
 }
 
