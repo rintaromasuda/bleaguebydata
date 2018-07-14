@@ -51,7 +51,7 @@ loadPlayerStats <- function(fileName) {
   for (col in c("FGP", "TPGP", "FTP")) {
     df[,col] <- gsub("%", "", df[,col])
     df[,col] <- as.numeric(df[,col])
-    df[,col] <- round((df[,col] / 100), 2)
+    df[,col] <- round((df[,col] / 100), 3)
   }
   
   # Convert "MM:SS" (or "MM:SS:00") to MM.(SS/60)
@@ -80,4 +80,7 @@ loadPlayerStats <- function(fileName) {
 }
 
 b1.1st <- loadPlayerStats("./201617_b1.csv")
+b2.1st <- loadPlayerStats("./201617_b2.csv")
 b1.2nd <- loadPlayerStats("./201718_b1.csv")
+b2.2nd <- loadPlayerStats("./201718_b2.csv")
+
