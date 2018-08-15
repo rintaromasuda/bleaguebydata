@@ -51,7 +51,7 @@ loadPlayerStats <- function(fileName) {
   for (col in c("FGP", "TPGP", "FTP")) {
     df[,col] <- gsub("%", "", df[,col])
     df[,col] <- as.numeric(df[,col])
-    df[,col] <- round((df[,col] / 100), 3)
+    df[,col] <- round((df[,col] / 100), 4)
   }
   
   # Convert "MM:SS" (or "MM:SS:00") to MM.(SS/60)
@@ -66,8 +66,8 @@ loadPlayerStats <- function(fileName) {
   df$MINPG <- sapply(str_split(df$MINPG_STR, ":"), minStrToMinDec)
 
   df$PPM <- round(df$PTS / df$MIN, 2)
-  df$EFGP <- round((df$FGM + 0.5 * df$TPGM) / df$FGA, 2)
-  df$TSP <- round(df$PTS / (2 * (df$FGA + (0.44 * df$FTA))) , 2)
+  df$EFGP <- round((df$FGM + 0.5 * df$TPGM) / df$FGA, 4)
+  df$TSP <- round(df$PTS / (2 * (df$FGA + (0.44 * df$FTA))) , 4)
 
   df$TOPG <- round(df$TO / df$G, 2)
   df$ORPG <- round(df$OR / df$G, 2)
