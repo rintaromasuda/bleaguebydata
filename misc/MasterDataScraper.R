@@ -8,6 +8,20 @@ if (!require(eeptools)) {
   library(eeptools)
 }
 
+leagues_team <- c(
+  rep("B1", 18),
+  rep("B2", 18)
+)
+
+areas_team <- c(
+  rep("“Œ’n‹æ", 6),
+  rep("’†’n‹æ", 6),
+  rep("¼’n‹æ", 6),
+  rep("“Œ’n‹æ", 6),
+  rep("’†’n‹æ", 6),
+  rep("¼’n‹æ", 6)
+)
+
 names_team <- c(
   # East
   "–kŠC“¹",
@@ -29,7 +43,31 @@ names_team <- c(
   "‘åã",
   "‹ž“s",
   "•Ÿ‰ª",
-  "—®‹…"
+  "—®‹…",
+  
+  # B2
+
+  # East
+  "ÂX",
+  "ŽRŒ`",
+  "å‘ä",
+  "•Ÿ“‡",
+  "ˆïé",
+  "ŒQ”n",
+  # Center
+  "“Œ‹žZ",
+  "”ª‰¤Žq",
+  "‹à‘ò",
+  "MB",
+  "FE–¼ŒÃ‰®",
+  "¼‹{",
+  # West
+  "“Þ—Ç",
+  "ì",
+  "L“‡",
+  "ˆ¤•Q",
+  "“‡ª",
+  "ŒF–{"
 )
 
 urls_team <- c(
@@ -50,17 +88,41 @@ urls_team <- c(
   "https://www.bleague.jp/club_detail/?TeamID=700",
   "https://www.bleague.jp/club_detail/?TeamID=699",
   "https://www.bleague.jp/club_detail/?TeamID=753",
-  "https://www.bleague.jp/club_detail/?TeamID=701"
+  "https://www.bleague.jp/club_detail/?TeamID=701",
+  "https://www.bleague.jp/club_detail/?TeamID=708",
+  "https://www.bleague.jp/club_detail/?TeamID=710",
+  "https://www.bleague.jp/club_detail/?TeamID=692",
+  "https://www.bleague.jp/club_detail/?TeamID=711",
+  "https://www.bleague.jp/club_detail/?TeamID=712",
+  "https://www.bleague.jp/club_detail/?TeamID=713",
+  "https://www.bleague.jp/club_detail/?TeamID=715",
+  "https://www.bleague.jp/club_detail/?TeamID=749",
+  "https://www.bleague.jp/club_detail/?TeamID=750",
+  "https://www.bleague.jp/club_detail/?TeamID=716",
+  "https://www.bleague.jp/club_detail/?TeamID=717",
+  "https://www.bleague.jp/club_detail/?TeamID=718",
+  "https://www.bleague.jp/club_detail/?TeamID=719",
+  "https://www.bleague.jp/club_detail/?TeamID=722",
+  "https://www.bleague.jp/club_detail/?TeamID=721",
+  "https://www.bleague.jp/club_detail/?TeamID=723",
+  "https://www.bleague.jp/club_detail/?TeamID=720",
+  "https://www.bleague.jp/club_detail/?TeamID=724"
 )
 
 df_team <- data.frame(
+  League = leagues_team,
+  Area = areas_team,
   Team = names_team,
   Url = urls_team,
   stringsAsFactors = FALSE
 )
 df_team$Team <- as.factor(df_team$Team)
 
+result <- data.frame()
+
 for(row in 1:nrow(df_team)) {
+  league_team <- df_team[row, "League"]
+  area_team <- df_team[row, "Area"]
   name_team <- df_team[row, "Team"]
   url_team <- df_team[row, "Url"]
 
@@ -97,6 +159,9 @@ for(row in 1:nrow(df_team)) {
 
     # Result
     df_player <- data.frame(
+      League = league_team,
+      Area = area_team,
+      Team = name_team,
       Name = name_player,
       School = player_school,
       Hometown = player_hometown,
@@ -110,9 +175,16 @@ for(row in 1:nrow(df_team)) {
       Nationality = player_nationality      
     )
     
-    print(df_player)
+    result <- rbind(result, df_player)
   }
 }
 
+write.csv(result, file = "player_master.csv")
+
+if (!require(readr)) {
+  install.packages("readr")
+  library(readr)
+}
+readr::write_excel_csv(result, "player_master_excel.csv")
 
 
