@@ -61,7 +61,7 @@ zipping <- function(x,y,z) {
   return(result)
 }
 
-ggplot(subset(dd2, RANK >= 201 & RANK <= 210),
+ggplot(subset(dd2, RANK >= 220 & RANK <= 228),
        aes(x = factor(PLAYER, levels = rev(unique(PLAYER))),
            y = PTS,
            fill = factor(TYPE, levels = c("FT", "3P", "2P")))) +
@@ -78,5 +78,4 @@ ggplot(subset(dd2, RANK >= 201 & RANK <= 210),
   ggtitle("各選手の得点方法（2017-18シーズン）") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5)) 
-
 View(dd2)
