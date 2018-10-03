@@ -126,18 +126,34 @@ for(row in 1:nrow(df_team)) {
   name_team <- df_team[row, "Team"]
   url_team <- df_team[row, "Url"]
 
-  html_team <- read_html(url_team, encoding = "utf-8")
-  
+  tryCatch(html_team <- read_html(url_team, encoding = "utf-8"),
+           error = function(e) {
+             print(paste("Error in", name_team))
+             Sys.sleep(3000)
+             stop
+           },
+           finally=print(paste(name_team, "has finished")))
+
   urls_player <- html_team %>%
     html_nodes("#contents_inner > div > article > section:nth-child(4) > div > ul > li > a") %>%
     html_attr("href")
   
   for(url_player in urls_player) {
-    html_player <- read_html(url_player, encoding = "utf-8")
+    tryCatch(html_player <- read_html(url_player, encoding = "utf-8"),
+             error = function(e) {
+               print(paste("Error in", url_player))
+               Sys.sleep(3000)
+               stop
+             },
+             finally=print(paste(url_player, "has finished")))
     
     name_player <- html_player %>%
       html_node("#contents_inner > div > article > header > div > h2") %>%
       html_text()
+    
+    position_player <- html_player %>%
+      html_node("#contents_inner > div > article > header > div > p.position") %>%
+      html_text()     
     
     tables_player <- html_table(html_player)
     table_demo <- tables_player[[1]]
@@ -147,7 +163,7 @@ for(row in 1:nrow(df_team)) {
     
     player_birthday_raw <- table_demo[3, c("X2")]
     player_birthday <- as.Date(player_birthday_raw, "%Y”N%mŒŽ%d“ú")
-    player_age <- floor(age_calc(player_birthday, Sys.Date(), units = "years"))
+    #player_age <- floor(age_calc(player_birthday, Sys.Date(), units = "years"))
 
     player_height_raw <- table_demo[4, c("X2")]
     player_height <- as.numeric(gsub("cm", "", player_height_raw))
@@ -163,11 +179,12 @@ for(row in 1:nrow(df_team)) {
       Area = area_team,
       Team = name_team,
       Name = name_player,
+      Position_Raw = position_player,
       School = player_school,
       Hometown = player_hometown,
       Birthday_Raw = player_birthday_raw,
       Birthday = player_birthday,
-      Age = player_age,
+      #Age = player_age,
       Height_Raw = player_height_raw,
       Height = player_height,
       Weight_Raw = player_weight_raw,
