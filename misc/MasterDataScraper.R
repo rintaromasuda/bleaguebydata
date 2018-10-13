@@ -132,7 +132,7 @@ for(row in 1:nrow(df_team)) {
              Sys.sleep(3000)
              stop
            },
-           finally=print(paste(name_team, "has finished")))
+           finally=print(paste(name_team, "has started")))
 
   urls_player <- html_team %>%
     html_nodes("#contents_inner > div > article > section:nth-child(4) > div > ul > li > a") %>%
@@ -146,7 +146,11 @@ for(row in 1:nrow(df_team)) {
                stop
              },
              finally=print(paste(url_player, "has finished")))
-    
+
+    startStr <- "PlayerID="
+    id_player <- substring(url_player,
+                           regexpr(startStr, url_player) + nchar(startStr))
+        
     name_player <- html_player %>%
       html_node("#contents_inner > div > article > header > div > h2") %>%
       html_text()
@@ -189,19 +193,20 @@ for(row in 1:nrow(df_team)) {
       Height = player_height,
       Weight_Raw = player_weight_raw,
       Weight = player_weight,
-      Nationality = player_nationality      
+      Nationality = player_nationality,
+      PlayerId = id_player
     )
     
     result <- rbind(result, df_player)
   }
 }
 
-write.csv(result, file = "player_master.csv")
+write.csv(result, file = "player_master_20181013.csv")
 
 if (!require(readr)) {
   install.packages("readr")
   library(readr)
 }
-readr::write_excel_csv(result, "player_master_excel.csv")
+readr::write_excel_csv(result, "player_master_20181013_excel.csv")
 
 
