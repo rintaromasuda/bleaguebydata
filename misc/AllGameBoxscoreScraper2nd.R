@@ -55,7 +55,8 @@ remDr <- RSelenium::remoteDriver(remoteServerAddr = "52.246.160.115",
                                  browserName = "chrome")
 remDr$open()
 
-result <- data.frame()
+result_summary <- data.frame()
+result_boxscore <- data.frame()
 
 for(idx_team in 1:length(names_team)) {
   name <- names_team[idx_team]
@@ -90,10 +91,16 @@ for(idx_team in 1:length(names_team)) {
       html_game <- read_html(pageSource[[1]])
       tables_game <- html_table(html_game)
       if(length(tables_game) >= 5) {
-        break
+        if (nrow(tables_game[[4]]) > 0 & nrow(tables_game[[5]]) > 0) {
+          break
+        }
+        else {
+          print("Try getPageSource() again #1...")
+          numAttempt <- numAttempt + 1         
+        }
       }
       else{
-        print("Try getPageSource() again...")
+        print("Try getPageSource() again #2...")
         numAttempt <- numAttempt + 1
       }
     }
@@ -231,21 +238,22 @@ for(idx_team in 1:length(names_team)) {
       df_AB$EX3.B <- table_scoreex[3, col_teamB]
     }
     
-    result <- rbind(result, df_AB)
+    result_summary <- rbind(result_summary, df_AB)
     
     ## For box score
     table_box_home <- tables_game[[4]]
     table_box_away <- tables_game[[5]]
+    
+    table_box_home$SHEDULEKEY <- id_schedule
+    table_box_away$SHEDULEKEY <- id_schedule
+    table_box_home$TEAM <- ifelse(isHome_teamA, name_teamA, name_teamB)
+    table_box_away$TEAM <- ifelse(isHome_teamA, name_teamB, name_teamA)
+        
     table_box <- rbind(table_box_home, table_box_away)
+    
+    result_boxscore <- rbind(result_boxscore, table_box)
   }
 }
 
-View(result)
-write.csv(result, file = "all_games_201718.csv")
-
-if (!require(readr)) {
-  install.packages("readr")
-  library(readr)
-}
-readr::write_excel_csv(result, "all_games_201718_excel.csv")
-
+write.csv(result_summary, file = "B1_201718_AllGames_Summary.csv")
+write.csv(result_boxscore, file = "B1_201718_AllGames_BoxScore.csv")
