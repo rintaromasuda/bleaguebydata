@@ -8,7 +8,7 @@ if (!require(RSelenium)) {
   library(RSelenium)
 }
 
-names_team <- c(
+names_team_201718 <- c(
   "北海道",
   "島根",
   "栃木",
@@ -29,7 +29,7 @@ names_team <- c(
   "琉球"
 )
 
-urls_team <- c(
+urls_team_201718 <- c(
   "https://www.bleague.jp/schedule/?tab=1&year=2017&event=2&club=702",
   "https://www.bleague.jp/schedule/?tab=1&year=2017&event=2&club=720",
   "https://www.bleague.jp/schedule/?tab=1&year=2017&event=2&club=703",
@@ -49,6 +49,53 @@ urls_team <- c(
   "https://www.bleague.jp/schedule/?tab=1&year=2017&event=2&club=718",
   "https://www.bleague.jp/schedule/?tab=1&year=2017&event=2&club=701"
 )
+
+names_team_201819 <- c(
+  "北海道",
+  "秋田",
+  "栃木",
+  "SR渋谷",
+  "A東京",
+  "千葉",
+  "新潟",
+  "富山",
+  "横浜",
+  "川崎",
+  "三遠",
+  "三河",
+  "名古屋D",
+  "滋賀",
+  "大阪",
+  "京都",
+  "福岡",
+  "琉球"
+)
+
+urls_team_201819 <- c(
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=702",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=693",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=703",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=726",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=706",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=704",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=695",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=696",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=694",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=727",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=697",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=728",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=729",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=698",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=700",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=699",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=753",
+  "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=701"
+)
+
+#names_team <- names_team_201718
+#urls_team <- urls_team_201718
+names_team <- names_team_201819
+urls_team <- urls_team_201819
 
 remDr <- RSelenium::remoteDriver(remoteServerAddr = "52.246.160.115",
                                  port = 4445L,
@@ -255,5 +302,5 @@ for(idx_team in 1:length(names_team)) {
   }
 }
 
-write.csv(result_summary, file = "B1_201718_AllGames_Summary.csv")
-write.csv(result_boxscore, file = "B1_201718_AllGames_BoxScore.csv")
+write.csv(result_summary, file = "B1_201819_5Games_Summary.csv")
+write.csv(result_boxscore, file = "B1_201819_5Games_BoxScore.csv")
