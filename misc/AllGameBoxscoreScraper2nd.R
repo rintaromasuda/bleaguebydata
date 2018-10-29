@@ -92,12 +92,56 @@ urls_team_201819 <- c(
   "https://www.bleague.jp/schedule/?tab=1&year=2018&event=2&club=701"
 )
 
+names_b2_team_201819 <- c(
+  "青森",
+  "仙台",
+  "山形",
+  "福島",
+  "茨城",
+  "群馬",
+  "東京Z",
+  "八王子",
+  "金沢",
+  "信州",
+  "FE名古屋",
+  "西宮",
+  "奈良",
+  "島根",
+  "広島",
+  "香川",
+  "愛媛",
+  "熊本"
+)
+
+urls_b2_team_201819 <- c(
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=708",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=692",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=710",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=711",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=712",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=713",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=715",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=749",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=750",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=716",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=717",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=718",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=719",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=720",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=721",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=722",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=723",
+  "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=724"
+)
+
 #names_team <- names_team_201718
 #urls_team <- urls_team_201718
-names_team <- names_team_201819
-urls_team <- urls_team_201819
+#names_team <- names_team_201819
+#urls_team <- urls_team_201819
+names_team <- names_b2_team_201819
+urls_team <- urls_b2_team_201819
 
-remDr <- RSelenium::remoteDriver(remoteServerAddr = "52.246.160.115",
+remDr <- RSelenium::remoteDriver(remoteServerAddr = "40.115.154.189",
                                  port = 4445L,
                                  browserName = "chrome")
 remDr$open()
@@ -139,7 +183,14 @@ for(idx_team in 1:length(names_team)) {
       tables_game <- html_table(html_game)
       if(length(tables_game) >= 5) {
         if (nrow(tables_game[[4]]) > 0 & nrow(tables_game[[5]]) > 0) {
-          break
+          chk <- tables_game[[1]]
+          if (nrow(subset(chk, X2 == "F")) > 0) {
+            break
+          }
+          else {
+            print("Try getPageSource() again #3...")
+            numAttempt <- numAttempt + 1         
+          }
         }
         else {
           print("Try getPageSource() again #1...")
@@ -302,5 +353,5 @@ for(idx_team in 1:length(names_team)) {
   }
 }
 
-write.csv(result_summary, file = "B1_201819_5Games_Summary.csv")
-write.csv(result_boxscore, file = "B1_201819_5Games_BoxScore.csv")
+write.csv(result_summary, file = "B2_201819_5setsu_Summary.csv")
+write.csv(result_boxscore, file = "B2_201819_5setsu_BoxScore.csv")
