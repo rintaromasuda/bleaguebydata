@@ -1,7 +1,8 @@
 # df <- read.csv("B1_201819_4setsu_Summary.csv")
-df <- read.csv("B2_201819_5setsu_Summary.csv")
+df <- read.csv("B1_201819_6setsu_Summary.csv")
 
 library(dplyr)
+library(ggplot2)
 
 df %>%
   group_by(TEAM.A) %>%
@@ -33,21 +34,15 @@ dd <- df %>%
             LOSE = sum(F.A < F.B)) %>%
   as.data.frame()
 
-if (!require(readr)) {
-  install.packages("readr")
-  library(readr)
-}
-readr::write_excel_csv(dd, "b2.csv")
-
 ggplot() +
   geom_point(data = dd, aes(x = OFFEFF, y = DFFEFF, size = (WIN/(WIN +LOSE)), color = TEAM.A)) +
   geom_text(data = dd, aes(x = OFFEFF, y = DFFEFF - 0.015, label = TEAM.A), size = 3) +
   guides(color=FALSE, size=guide_legend(title="勝率")) +
   xlab("1ポゼッション当たりの得点") +
   ylab("（相手チームの）1ポゼッション当たりの得点") +
-  ggtitle("2018-19シーズン B2 第5節終了時点")
-
-library(ggplot2)
+  ggtitle("2018-19シーズン B1 第6節（10ゲーム）終了時点") +
+  xlim(c(0.9, 1.2)) +
+  ylim(c(0.9, 1.2))
 
 ggplot() +
   geom_point(data = df, aes(x = TEAM.A, y = F.A, size = abs(F.A - F.B), color = RESULT.A), alpha = 0.7) +

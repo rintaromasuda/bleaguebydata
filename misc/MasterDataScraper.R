@@ -201,7 +201,7 @@ for(row in 1:nrow(df_team)) {
   }
 }
 
-write.csv(result, file = "player_master_20181013.csv")
+write.csv(result, file = "player_master_20181106.csv")
 
 if (!require(readr)) {
   install.packages("readr")

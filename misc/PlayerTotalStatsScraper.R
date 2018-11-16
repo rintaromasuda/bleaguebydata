@@ -5,7 +5,7 @@ if (!require(rvest)) {
 
 result <- data.frame()
 
-for (year in c(2016, 2017)) {
+for (year in c(2018)) {
   for (league in c(1, 2)) {
     url_top <- paste("https://www.bleague.jp/stats/",
                      "?tab=",
@@ -33,6 +33,7 @@ for (year in c(2016, 2017)) {
     df_player <- tables_total[[1]]
     
     df_player$ID <- c(ids_player, rep("-1", nrow(df_player) - length(ids_player)))
+    
     df_player$YEAR <- year
     df_player$LEAGUE <- league
     
@@ -40,5 +41,10 @@ for (year in c(2016, 2017)) {
   }
 }
 
+#write.csv(result, file = "PlayerTotalStats_20181106.csv")
 
-
+if (!require(readr)) {
+  install.packages("readr")
+  library(readr)
+}
+readr::write_excel_csv(result, "PlayerTotalStats_20181106_Excel.csv")
