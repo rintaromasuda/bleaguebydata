@@ -129,10 +129,10 @@ urls_b2_team_201819 <- c(
   "https://www.bleague.jp/schedule/?tab=2&year=2018&event=7&club=724"
 )
 
-names_team <- names_team_201718
-urls_team <- urls_team_201718
-#names_team <- names_team_201819
-#urls_team <- urls_team_201819
+#names_team <- names_team_201718
+#urls_team <- urls_team_201718
+names_team <- names_team_201819
+urls_team <- urls_team_201819
 #names_team <- names_b2_team_201819
 #urls_team <- urls_b2_team_201819
 
@@ -234,4 +234,4 @@ for(idx_team in 1:length(names_team)) {
   }
 }
 
-write.csv(result_summary, file = "B1_201718_All_Attendance.csv")
+write.csv(result_summary, file = "B1_201819_11setsu_Attendance.csv")

@@ -1,8 +1,4 @@
-setwd("c:/users/rinta/Desktop")
-load("player_total_data.RData")
-
-str(result)
-df <- result
+df <- read.csv("PlayerTotalStats_201819_20181125.csv")
 
 df$TEAM <- as.factor(df$TEAM)
 df$ID <- as.numeric(df$ID)
@@ -30,14 +26,13 @@ df$MINPG <- ifelse(is.na(df$MINPG_RAW), 0,
                         sapply(str_split(df$MINPG_RAW, ":"), minStrToMinDec)))
 
 df$PTSBYFT <- as.numeric(df$FTM)
-df$PTSBY3P <- as.numeric(df$'3FGM') * 3
-df$PTSBY2P <- (as.numeric(df$FGM) - as.numeric(df$'3FGM')) * 2
+df$PTSBY3P <- as.numeric(df$'X3FGM') * 3
+df$PTSBY2P <- (as.numeric(df$FGM) - as.numeric(df$'X3FGM')) * 2
 df$PTSCHK <- df$PTSBY2P + df$PTSBY3P + df$PTSBYFT
 
-b1.1st <- df[df$LEAGUE == 1 & df$YEAR == 2016 & df$ID > 0,]
-b1.2nd <- df[df$LEAGUE == 1 & df$YEAR == 2017 & df$ID > 0,]
+df_b1 <- df[df$LEAGUE == 1 & df$YEAR == 2018,]
 
-dd <- b1.2nd[, c("TEAM", "PLAYER", "PTS", "PTSBYFT", "PTSBY2P", "PTSBY3P", "PTSCHK")]
+dd <- df_b1[, c("TEAM", "PLAYER", "PTS", "PTSBYFT", "PTSBY2P", "PTSBY3P", "PTSCHK")]
 dd$PLAYER <- paste(dd$PLAYER," (",as.character(dd$PTS),")", sep = "")
 dd <- dd[order(dd$PTSCHK, decreasing = TRUE), c("TEAM", "PLAYER", "PTSBY2P", "PTSBY3P", "PTSBYFT", "PTS")]
 dd$RANK <- 1:nrow(dd)
@@ -61,21 +56,36 @@ zipping <- function(x,y,z) {
   return(result)
 }
 
-ggplot(subset(dd2, RANK >= 220 & RANK <= 228),
-       aes(x = factor(PLAYER, levels = rev(unique(PLAYER))),
-           y = PTS,
-           fill = factor(TYPE, levels = c("FT", "3P", "2P")))) +
-  geom_bar(stat = "identity", position = "fill") +
-  geom_text(aes(x = factor(PLAYER, levels = rev(unique(PLAYER))),
-                y = zipping(rep(0.05, 10), ((PTS / TOTAL)[c(TRUE,FALSE,FALSE)] + (PTS / 2 / TOTAL)[c(FALSE,TRUE,FALSE)]) ,rep(0.95, 10)),
-                label = paste(as.character(round((PTS / TOTAL), 3) * 100), "%", sep = "")),
-            size = 3.2) +
-  scale_y_continuous(labels = scales::percent) +
-  coord_flip() +
-  ylab("") +
-  xlab("") +
-  labs(fill='') +
-  ggtitle("Še‘IŽè‚Ì“¾“_•û–@i2017-18ƒV[ƒYƒ“j") +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5)) 
-View(dd2)
+foo <- function(rank) {
+  len <- length(rank)
+  ggplot(subset(dd2, RANK %in% rank),
+         aes(x = factor(PLAYER, levels = rev(unique(PLAYER))),
+             y = PTS,
+             fill = factor(TYPE, levels = c("FT", "3P", "2P")))) +
+    geom_bar(stat = "identity", position = "fill") +
+    geom_text(aes(x = factor(PLAYER, levels = rev(unique(PLAYER))),
+                  y = zipping(rep(0.05, len),
+                              ((PTS / TOTAL)[c(TRUE,FALSE,FALSE)] + (PTS / 2 / TOTAL)[c(FALSE,TRUE,FALSE)]),
+                              rep(0.95, len)),
+                  label = paste(as.character(round((PTS / TOTAL), 3) * 100), "%", sep = "")),
+              size = 3.2) +
+    scale_y_continuous(labels = scales::percent) +
+    coord_flip() +
+    ylab("") +
+    xlab("") +
+    labs(fill='') +
+    ggtitle("å„é¸æ‰‹ã®å¾—ç‚¹æ–¹æ³•ï¼ˆ2018-19ã‚·ãƒ¼ã‚ºãƒ³ ç¬¬11ç¯€çµ‚äº†æ™‚ç‚¹ï¼‰") +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5))
+  
+  #filename <- paste("rank_from",
+#                    as.character(rank_start),
+#                    "_to",
+#                    as.character(rank_end),
+#                    ".jpeg",
+#                    sep = "")
+  #ggsave(filename, width = 8, height = 5)
+}
+
+foo(c(23,48,49))
+ggsave("point_method.jpeg", width = 8, height = 5)

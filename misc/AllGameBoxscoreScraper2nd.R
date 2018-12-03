@@ -136,10 +136,10 @@ urls_b2_team_201819 <- c(
 
 #names_team <- names_team_201718
 #urls_team <- urls_team_201718
-#names_team <- names_team_201819
-#urls_team <- urls_team_201819
-names_team <- names_b2_team_201819
-urls_team <- urls_b2_team_201819
+names_team <- names_team_201819
+urls_team <- urls_team_201819
+#names_team <- names_b2_team_201819
+#urls_team <- urls_b2_team_201819
 
 remDr <- RSelenium::remoteDriver(remoteServerAddr = "40.115.154.189",
                                  port = 4445L,
@@ -234,7 +234,6 @@ for(idx_team in 1:length(names_team)) {
     }
     
     print(paste("Game #", idx_game, name_home, "vs.", name_away))
-    
     
     if(name_home == name) {
       col_teamA <- 1
@@ -359,5 +358,5 @@ for(idx_team in 1:length(names_team)) {
   }
 }
 
-write.csv(result_summary, file = "B2_201819_8setsu_Summary.csv")
-write.csv(result_boxscore, file = "B2_201819_8setsu_BoxScore.csv")
+write.csv(result_summary, file = "B1_201819_11setsu_Summary.csv")
+write.csv(result_boxscore, file = "B1_201819_11setsu_BoxScore.csv")

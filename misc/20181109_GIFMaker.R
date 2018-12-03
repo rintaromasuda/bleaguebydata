@@ -1,4 +1,4 @@
-df <- read.csv("B1_201819_8setsu_Summary.csv")
+df <- read.csv("B1_201819_11setsu_Summary.csv")
 
 library(dplyr)
 library(ggplot2)
@@ -39,19 +39,19 @@ drawAndSave <- function(gameIndex) {
     as.data.frame()
 
   ggplot() +
-    geom_point(data = dd, aes(x = OFFEFF, y = DFFEFF, size = (WIN/(WIN +LOSE)), color = TEAM.A)) +
-    geom_text(data = dd, aes(x = OFFEFF, y = DFFEFF - 0.02, label = TEAM.A), size = 3) +
+    geom_point(data = dd, aes(x = OFFEFF, y = DFFEFF, color = TEAM.A), alpha = 0.7, size = 4) +
+    geom_text(data = dd, aes(x = OFFEFF, y = DFFEFF - 0.005, label = TEAM.A), size = 3) +
     guides(color=FALSE, size=guide_legend(title="勝率")) +
     xlab("1ポゼッション当たりの得点") +
     ylab("（相手チームの）1ポゼッション当たりの得点") +
     ggtitle(title) +
     guides(size=FALSE) +
-    xlim(c(0.8, 1.35)) +
-    ylim(c(0.8, 1.35))
+    scale_y_continuous(limits = c(0.9, 1.2), breaks = seq(0.9, 1.2, by = 0.1)) +
+    scale_x_continuous(limits = c(0.9, 1.2), breaks = seq(0.9, 1.2, by = 0.1))
   
-  ggsave(filename = filename, width = 7, height = 5)
+  ggsave(filename = filename, width = 7, height = 7)
 }
 
-for(i in seq(1,13)) {
+for(i in seq(10,10)) {
   drawAndSave(i)
 }

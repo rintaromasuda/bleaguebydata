@@ -37,14 +37,14 @@ for (year in c(2018)) {
     df_player$YEAR <- year
     df_player$LEAGUE <- league
     
-    result <- rbind(result, df_player)
+    result <- rbind(result, subset(df_player, PLAYER != "PLAYER"))
   }
 }
 
-#write.csv(result, file = "PlayerTotalStats_20181106.csv")
+write.csv(result, file = "PlayerTotalStats_201819_20181201.csv")
 
 if (!require(readr)) {
   install.packages("readr")
   library(readr)
 }
-readr::write_excel_csv(result, "PlayerTotalStats_20181106_Excel.csv")
+readr::write_excel_csv(result, "PlayerTotalStats_201819_20181201_Excel.csv")
