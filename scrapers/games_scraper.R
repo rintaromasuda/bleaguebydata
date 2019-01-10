@@ -68,6 +68,8 @@ for (league in leagues) {
         startStr <- "ScheduleKey="
         key <- substring(url.game,
                          regexpr(startStr, url.game) + nchar(startStr))
+
+        # Duplicate check
         if (!(key %in% scheduleKeys)) {
           scheduleKeys <- append(scheduleKeys, key)
           html.game <- read_html(url.game, encoding = "utf-8")

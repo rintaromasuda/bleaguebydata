@@ -1,4 +1,4 @@
-devtools::install_github("rintaromasuda/bleaguer")
+devtools::install_github("rintaromasuda/bleaguer", force = TRUE)
 library(bleaguer)
 
 if (!require(rvest)) {
@@ -22,15 +22,16 @@ remDr <- RSelenium::remoteDriver(remoteServerAddr = "40.115.154.189",
 remDr$open()
 
 df.result <- data.frame()
+scraped.games <- unique(b.games.summary$ScheduleKey)
+exception.games <- c(4090)
 irregular.games <- c()
 
-season <- "2016-17"
-#df.games <- subset(b.games, ScheduleKey %in% c(2718,2690,2715,2712,2693))
-df.games <- subset(b.games, Season == season & ScheduleKey != 4090)
+season <- "2018-19"
+df.games <- subset(b.games, Season == season)
 
 for (idx in seq(1:nrow(df.games))) {
   key <- df.games[idx, "ScheduleKey"]
-  if (key %in% df.result$ScheduleKey) {
+  if (key %in% df.result$ScheduleKey | key %in% exception.games | key %in% scraped.games) {
     print(paste("Skip->", key))
     next
   }
