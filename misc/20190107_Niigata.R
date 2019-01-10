@@ -32,3 +32,27 @@ ggplot() +
   scale_y_continuous(labels = scales::percent)
 
 ggsave("B2.jpeg", width = 8, height = 5)
+
+ggplot() +
+  geom_boxplot(data = subset(df, Category == "Regular" & Season == "2018-19" & League == "B1"),
+               aes(x = TeamName, y = PtsInPaint / PTS), color = "darkred") +
+  ylab("") +
+  xlab("") +
+  ggtitle("ペイントエリア内の得点が総得点に占める割合\n(2018-19レギュラーシーズン31試合終了時点)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = scales::percent)
+
+ggsave("B1Paint.jpeg", width = 8, height = 5)
+
+ggplot() +
+  geom_boxplot(data = subset(df, Category == "Regular" & Season == "2018-19" & League == "B2"),
+               aes(x = TeamName, y = PtsInPaint / PTS), color = "darkblue") +
+  ylab("") +
+  xlab("") +
+  ggtitle("ペイントエリア内の得点が総得点に占める割合\n(2018-19レギュラーシーズン30試合終了時点)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = scales::percent)
+
+ggsave("B2Paint.jpeg", width = 8, height = 5)
