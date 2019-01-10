@@ -31,17 +31,17 @@ for (league in leagues) {
   if (league == "B1") {
     events <- subset(b.events, EventId %in% b1.events)
   } else {
-    events <- subset(b.events, EventId %in% b1.events)
+    events <- subset(b.events, EventId %in% b2.events)
   }
   # Retrieve teams
-  teams <- subset(b.teams, Season == season & League == league)  
-  
+  teams <- subset(b.teams, Season == season & League == league)
+
   for (event_row in seq(1:nrow(events))) {
     # Iterate each event
     event.Id <- events[event_row, ]$EventId
     event.Name <- events[event_row, ]$ShortName
     event.Category <- events[event_row, ]$Category
-    
+
     for (team_row in seq(1:nrow(teams))) {
       # Iterate each team
       team.Id <- teams[team_row, ]$TeamId
