@@ -42,7 +42,7 @@ df.unpivot <-
         Method = "2P (Not Paint)",
         Point = df.grouped$PointBy2 - df.grouped$PointBy2Paint,
         Total = df.grouped$Total,
-        Position = 0.23
+        Position = (df.grouped$PointByFT + ((df.grouped$PointBy2 - df.grouped$PointBy2Paint) / 2)) / df.grouped$Total
       ),
       data.frame(
         League = df.grouped$League,
@@ -54,7 +54,7 @@ df.unpivot <-
       )
 )
 
-df.target <- subset(df.unpivot, League == "B2")
+df.target <- subset(df.unpivot, League == "B1")
 
 ggplot(data = df.target) +
   geom_bar(
