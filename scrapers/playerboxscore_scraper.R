@@ -11,11 +11,6 @@ if (!require(RSelenium)) {
   library(RSelenium)
 }
 
-# if (!require(dplyr)) {
-#   install.packages("dplyr")
-#   library(dplyr)
-# }
-
 remDr <- RSelenium::remoteDriver(remoteServerAddr = "40.115.154.189",
                                  port = 4445L,
                                  browserName = "chrome")
@@ -58,6 +53,7 @@ for (idx in seq(1:nrow(df.games))) {
     next
   }
   
+  # Read player URLs and name separately as just reading the tables don't give us them
   urls.home.players <- html.boxscore %>%
     html_nodes("#game__boxscore__inner > ul.boxscore_contents > li.select > div:nth-child(2) > table > tbody > tr > td:nth-child(3) > a") %>%
     html_attr("href")  
@@ -73,9 +69,22 @@ for (idx in seq(1:nrow(df.games))) {
   names.away.players <- html.boxscore %>%
     html_nodes("  #game__boxscore__inner > ul.boxscore_contents > li.select > div:nth-child(4) > table > tbody > tr > td:nth-child(3) > a > span.for-pc") %>%
     html_text(trim = TRUE)
-  
+
+  # Get IDs out of URLs and trim the names
+  startStr <- "PlayerID="
+  ids.home.players <- substring(urls.home.players,
+                           regexpr(startStr, urls.home.players) + nchar(startStr))
+  ids.away.players <- substring(urls.away.players,
+                                regexpr(startStr, urls.away.players) + nchar(startStr))
+  names.home.players <- gsub(" ", "", names.home.players) # Hankaku
+  names.home.players <- gsub("　", "", names.home.players) # Zenkaku
+  names.away.players <- gsub(" ", "", names.away.players) # Hankaku
+  names.away.players <- gsub("　", "", names.away.players) # Zenkaku  
+    
   print(names.home.players)
+  print(ids.home.players)
   print(names.away.players)
+  print(ids.away.players)
 }
 
 # fileName <- paste("games_summary_", as.character(season), ".csv", sep = "")
