@@ -30,14 +30,14 @@ season <- "2018-19"
 df.games <- subset(b.games, Season == season)
 
 for (idx in seq(1:nrow(df.games))) {
-  key <- df.games[idx, "ScheduleKey"]
+  key <- df.games[idx,]$ScheduleKey
   if (key %in% df.result$ScheduleKey | key %in% exception.games | key %in% scraped.games) {
     print(paste("Skip->", key))
     next
   }
 
-  homeTeamId <- df.games[idx, "HomeTeamId"]
-  awayTeamId <- df.games[idx, "AwayTeamId"]
+  homeTeamId <- df.games[idx,]$HomeTeamId
+  awayTeamId <- df.games[idx,]$AwayTeamId
 
   url.detail <- paste("https://www.bleague.jp/game_detail/?ScheduleKey=",
                       as.character(key),

@@ -1,4 +1,4 @@
-devtools::install_github("rintaromasuda/bleaguer", force = TRUE)
+devtools::install_github("rintaromasuda/bleaguer")
 library(bleaguer)
 
 if (!require(rvest)) {
@@ -26,14 +26,14 @@ df.games <- subset(b.games, Season == season)
 
 for (idx in seq(1:nrow(df.games))) {
   
-  key <- df.games[idx, "ScheduleKey"]
+  key <- df.games[idx,]$ScheduleKey
   if (key %in% df.result$ScheduleKey | key %in% exception.games | key %in% scraped.games) {
     print(paste("Already done. Skipping->", key))
     next
   }
 
-  homeTeamId <- df.games[idx, "HomeTeamId"]
-  awayTeamId <- df.games[idx, "AwayTeamId"]
+  homeTeamId <- df.games[idx,]$HomeTeamId
+  awayTeamId <- df.games[idx,]$AwayTeamId
 
   url.detail <- paste("https://www.bleague.jp/game_detail/?ScheduleKey=",
                       as.character(key),
@@ -80,11 +80,41 @@ for (idx in seq(1:nrow(df.games))) {
   names.home.players <- gsub("　", "", names.home.players) # Zenkaku
   names.away.players <- gsub(" ", "", names.away.players) # Hankaku
   names.away.players <- gsub("　", "", names.away.players) # Zenkaku  
-    
-  print(names.home.players)
-  print(ids.home.players)
-  print(names.away.players)
-  print(ids.away.players)
+
+  # Total boxscore tables    
+  table.home.total <- tables.boxscore[[4]]
+  table.away.total <- tables.boxscore[[5]]
+  
+  # Removing summary rows at the bottom
+  table.home.total <- table.home.total[!is.na(table.home.total$`#`),]
+  table.away.total <- table.away.total[!is.na(table.away.total$`#`),]
+  
+  # Validate row numbers
+  if ((nrow(table.home.total) != length(names.home.players)) |
+      (nrow(table.home.total) != length(ids.home.players)) |
+      (nrow(table.away.total) != length(names.away.players)) |
+      (nrow(table.away.total) != length(ids.away.players))) {
+    print(paste("Data row num mis-match->", key))
+    irregular.games <- append(irregular.games, key)
+    next
+  }
+  
+  # Replacing names and adding more columns
+  table.home.total$PLAYER <- names.home.players
+  table.away.total$PLAYER <- names.away.players
+
+  table.home.total$PlayerId <- ids.home.players
+  table.away.total$PlayerId <- ids.away.players
+  
+  table.home.total$ScheduleKey <- key
+  table.away.total$ScheduleKey <- key
+  table.home.total$TeamId <- homeTeamId
+  table.away.total$TeamId <- awayTeamId
+  
+  df.total <- rbind(table.home.total, table.away.total)
+  df.total$BoxType <- "Total"
+  
+  df.result <- rbind(df.result, df.total)
 }
 
 # fileName <- paste("games_summary_", as.character(season), ".csv", sep = "")
