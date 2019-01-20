@@ -21,7 +21,7 @@ scraped.games <- c()
 exception.games <- c(4090)
 irregular.games <- c()
 
-season <- "2018-19"
+season <- "2016-17"
 df.games <- subset(b.games, Season == season)
 
 for (idx in seq(1:nrow(df.games))) {
@@ -42,12 +42,26 @@ for (idx in seq(1:nrow(df.games))) {
                       )
   print(url.detail)
   
-  remDr$navigate(url.detail)
-  pageSource <- remDr$getPageSource()
-  html.boxscore <- read_html(pageSource[[1]])
+  try.count <- 1
+  try.success <- FALSE
+  try.threshold <- 60
+  while (try.count <= try.threshold) {
+    remDr$navigate(url.detail)
+    pageSource <- remDr$getPageSource()
+    html.boxscore <- read_html(pageSource[[1]])
+    tables.boxscore <- html_table(html.boxscore)
+    # Check the page and leave if it's good
+    if (length(tables.boxscore) >= 13) {
+      try.success <- TRUE
+      break
+    } else {
+      Sys.sleep(0.5)
+      print(paste("Retry the page load...(", try.count, ")", sep = ""))
+      try.count <- try.count + 1
+    }
+  }
   
-  tables.boxscore <- html_table(html.boxscore)
-  if (length(tables.boxscore) < 13) {
+  if (!try.success) {
     print(paste("Insufficient tables->", key))
     irregular.games <- append(irregular.games, key)
     next
@@ -117,7 +131,48 @@ for (idx in seq(1:nrow(df.games))) {
   df.result <- rbind(df.result, df.total)
 }
 
-# fileName <- paste("games_summary_", as.character(season), ".csv", sep = "")
-# write.csv(df.output, fileName, fileEncoding = "UTF-8", row.names = FALSE, quote = FALSE)
+df.result.bk <- df.result
 
-#game__boxscore__inner > ul.boxscore_contents > li.select > div:nth-child(2) > table > tbody > tr:nth-child(1) > td:nth-child(3) > a
+df.result$Number <- df.result$`#`
+df.result$StarterBench <- ifelse(df.result$S == "〇", "Starter", "Bench")
+df.result$Player <- df.result$PLAYER
+df.result$Position <- df.result$PO
+df.result$F3GM <- df.result$`3FGM`
+df.result$F3GA <- df.result$`3FGA`
+df.result$MIN.STR <- df.result$MIN
+df.result$MIN <- bleaguer::ConvertMinStrToDec(df.result$MIN.STR)
+
+df.output <- df.result[,c(
+                       "ScheduleKey",
+                       "TeamId",
+                       "BoxType",
+                       "PlayerId",
+                       "Player",
+                       "Number",
+                       "Position",
+                       "StarterBench",
+                       "MIN",
+                       "MIN.STR",
+                       "PTS",
+                       "FGM",
+                       "FGA",
+                       "F3GM",
+                       "F3GA",
+                       "FTM",
+                       "FTA",
+                       "OR",
+                       "DR",
+                       "TR",
+                       "AS",
+                       "TO",
+                       "ST",
+                       "BS",
+                       "BSR",
+                       "F",
+                       "FD",
+                       "DUNK",
+                       "EFF"
+                       )]
+
+fileName <- paste("games_boxscore_", as.character(season), ".csv", sep = "")
+write.csv(df.output, fileName, fileEncoding = "UTF-8", row.names = FALSE, quote = FALSE)
