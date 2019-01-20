@@ -21,7 +21,7 @@ scraped.games <- c()
 exception.games <- c(4090)
 irregular.games <- c()
 
-season <- "2016-17"
+season <- "2018-19"
 df.games <- subset(b.games, Season == season)
 
 for (idx in seq(1:nrow(df.games))) {
@@ -34,6 +34,7 @@ for (idx in seq(1:nrow(df.games))) {
 
   homeTeamId <- df.games[idx,]$HomeTeamId
   awayTeamId <- df.games[idx,]$AwayTeamId
+  eventId <- df.games[idx,]$EventId
 
   url.detail <- paste("https://www.bleague.jp/game_detail/?ScheduleKey=",
                       as.character(key),
@@ -45,13 +46,15 @@ for (idx in seq(1:nrow(df.games))) {
   try.count <- 1
   try.success <- FALSE
   try.threshold <- 60
+  # Post-season Game 3s in 2016-17 and 2017-18 have less tables
+  expected.table.count <- ifelse(eventId %in% c(300,400,800), 9, 13)
   while (try.count <= try.threshold) {
     remDr$navigate(url.detail)
     pageSource <- remDr$getPageSource()
     html.boxscore <- read_html(pageSource[[1]])
     tables.boxscore <- html_table(html.boxscore)
     # Check the page and leave if it's good
-    if (length(tables.boxscore) >= 13) {
+    if (length(tables.boxscore) >= expected.table.count) {
       try.success <- TRUE
       break
     } else {
