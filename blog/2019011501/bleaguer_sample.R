@@ -1,6 +1,7 @@
 devtools::install_github("rintaromasuda/bleaguer")
 library(bleaguer)
 
+# %>%などを使用するためにdplyrパッケージのインストールとロード
 if (!require(dplyr)) {
   install.packages("dplyr")
   library(dplyr)
@@ -29,3 +30,23 @@ df %>%
   summarize(MeanAttendance = mean(Attendance),
             NumGames = n()) %>%
   as.data.frame()
+
+# 描画に使うggplot2パッケージのインストールとロード
+if (!require(ggplot2)) {
+  install.packages("ggplot2")
+  library(ggplot2)
+}
+
+# 横浜ビー・コルセアーズの2018-19シーズンの得点をホーム、アウェイに分けて箱ひげ図にする
+ggplot() +
+  geom_boxplot(data = subset(df, Category == "Regular" &
+                             　Season == "2018-19" &
+                               TeamName == "横浜"),
+               aes(x = HomeAway, y = PTS))
+
+# 2018-19シーズンのB1各チームの失点を箱ひげ図にする
+ggplot() +
+  geom_boxplot(data = subset(df, Category == "Regular" &
+                               Season == "2018-19" &
+                               League == "B1"),
+               aes(x = TeamName, y = Opp.PTS))
