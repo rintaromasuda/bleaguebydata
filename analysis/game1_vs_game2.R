@@ -29,6 +29,8 @@ df.target$GameSeq <- ifelse(!is.na(df.target$DaysToNextGame) & !is.na(df.target$
 df.target$GameSeq <- factor(df.target$GameSeq)
 summary(df.target$GameSeq)
 
+league <- "B1"
+
 # Visualize
 ggplot() +
   geom_boxplot(data = df.target,
@@ -49,7 +51,7 @@ ggplot() +
   )
 
 ggplot() +
-  geom_boxplot(data = subset(df.target, Season == "2018-19" & League == "B1"),
+  geom_boxplot(data = subset(df.target, Season == "2018-19" & League == league),
                aes(x = GameSeq,
                    y = PTS,
                    fill = GameSeq)) +
@@ -89,7 +91,7 @@ ggplot() +
   )
 
 ggplot() +
-  geom_boxplot(data = subset(df.target, Season == "2018-19" & League == "B2"),
+  geom_boxplot(data = subset(df.target, Season == "2018-19" & League == league),
                aes(x = Season,
                    y = eFGR,
                    fill = GameSeq)) +
@@ -129,7 +131,7 @@ ggplot() +
   )
 
 ggplot() +
-  geom_boxplot(data = subset(df.target, Season == "2018-19" & League == "B1"),
+  geom_boxplot(data = subset(df.target, Season == "2018-19" & League == league),
                aes(x = GameSeq,
                    y = POS,
                    fill = GameSeq)) +
@@ -166,7 +168,7 @@ ggplot() +
   )
 
 ggplot() +
-  geom_boxplot(data = subset(df.target, Season == "2018-19" & League == "B1"),
+  geom_boxplot(data = subset(df.target, Season == "2018-19" & League == league),
                aes(x = GameSeq,
                    y = F,
                    fill = GameSeq)) +
@@ -184,8 +186,9 @@ ggplot() +
   ) +
   facet_wrap(~TeamName, ncol = 6)
 
+
 ggplot() +
-  geom_boxplot(data = subset(df.target, Season == "2018-19" & League == "B1"),
+  geom_boxplot(data = subset(df.target, Season == "2018-19" & League == league),
                aes(x = GameSeq,
                    y = PTS - Opp.PTS,
                    fill = GameSeq)) +
