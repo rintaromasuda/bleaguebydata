@@ -35,7 +35,7 @@ plotReboundTrend <- function(season = "2018-19", league = "B1") {
   
   ggplot() +
     geom_point(data = df.target,
-               size = 2,
+               size = 1,
                aes(x = Game.Index,
                    y = ORR,
                    color = "オフェンスリバウンド")) +
@@ -46,7 +46,7 @@ plotReboundTrend <- function(season = "2018-19", league = "B1") {
                     y = ORR,
                     color = "オフェンスリバウンド")) +
     geom_point(data = df.target,
-               size = 2,
+               size = 1,
                aes(x = Game.Index,
                    y = DRR,
                    color = "ディフェンスリバウンド")) +
