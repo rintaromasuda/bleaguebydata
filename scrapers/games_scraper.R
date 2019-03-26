@@ -1,3 +1,5 @@
+Sys.setlocale(locale = 'Japanese')
+
 devtools::install_github("rintaromasuda/bleaguer", force = TRUE)
 
 library(bleaguer)

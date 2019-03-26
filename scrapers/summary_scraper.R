@@ -1,4 +1,6 @@
-devtools::install_github("rintaromasuda/bleaguer", force = TRUE)
+Sys.setlocale(locale = 'Japanese')
+
+devtools::install_github("rintaromasuda/bleaguer", force = TRUE, ref = "feature/update20190326")
 library(bleaguer)
 
 if (!require(rvest)) {
@@ -16,8 +18,8 @@ if (!require(dplyr)) {
   library(dplyr)
 }
 
-remDr <- RSelenium::remoteDriver(remoteServerAddr = "40.115.154.189",
-                                 port = 4445L,
+remDr <- RSelenium::remoteDriver(remoteServerAddr = "bleaguer-selenium1",
+                                 port = 4444L,
                                  browserName = "chrome")
 remDr$open()
 

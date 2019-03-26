@@ -1,4 +1,6 @@
-devtools::install_github("rintaromasuda/bleaguer", force = TRUE)
+Sys.setlocale(locale = 'Japanese')
+
+devtools::install_github("rintaromasuda/bleaguer", force = TRUE, ref = "feature/update20190326")
 library(bleaguer)
 
 if (!require(rvest)) {
@@ -11,8 +13,8 @@ if (!require(RSelenium)) {
   library(RSelenium)
 }
 
-remDr <- RSelenium::remoteDriver(remoteServerAddr = "40.115.154.189",
-                                 port = 4445L,
+remDr <- RSelenium::remoteDriver(remoteServerAddr = "bleaguer-selenium1",
+                                 port = 4444L,
                                  browserName = "chrome")
 remDr$open()
 
@@ -54,7 +56,9 @@ for (idx in seq(1:nrow(df.games))) {
     html.boxscore <- read_html(pageSource[[1]])
     tables.boxscore <- html_table(html.boxscore)
     # Check the page and leave if it's good
-    if (length(tables.boxscore) >= expected.table.count) {
+    if ((length(tables.boxscore) >= expected.table.count) &&
+        (nrow(tables.boxscore[[4]]) > 0) &&
+        (nrow(tables.boxscore[[5]]) > 0)) {
       try.success <- TRUE
       break
     } else {
@@ -115,7 +119,7 @@ for (idx in seq(1:nrow(df.games))) {
     irregular.games <- append(irregular.games, key)
     next
   }
-
+  
   # Replacing names and adding more columns
   table.home.total$PLAYER <- names.home.players
   table.away.total$PLAYER <- names.away.players
