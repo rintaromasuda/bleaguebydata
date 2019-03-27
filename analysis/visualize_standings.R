@@ -1,4 +1,4 @@
-devtools::install_github("rintaromasuda/bleaguer", ref = "feature/dataupdate20190226")
+devtools::install_github("rintaromasuda/bleaguer")
 library(bleaguer)
 
 if (!require(ggplot2)) {
@@ -85,4 +85,5 @@ createImages <- function(season, league) {
   }
 }
 
-createImages("2018-19", "B2")
+createImages("2018-19", "B1")
+system("magick -delay 20 -loop 0 standing_*.jpeg standings.gif")
