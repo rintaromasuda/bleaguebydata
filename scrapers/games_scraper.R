@@ -172,8 +172,4 @@ df.output <- df.merged[, c("ScheduleKey",
 
 write.csv(df.output, "games.csv", fileEncoding = "UTF-8", row.names = FALSE, quote = FALSE)
 
-df.output %>%
-  group_by(EventId, AwayTeamId) %>%
-  summarise(N = n()) %>%
-  View()
 

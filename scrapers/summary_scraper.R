@@ -1,6 +1,5 @@
 Sys.setlocale(locale = 'Japanese')
 
-devtools::install_github("rintaromasuda/bleaguer", force = TRUE, ref = "feature/update20190326")
 library(bleaguer)
 
 if (!require(rvest)) {
@@ -18,6 +17,11 @@ if (!require(dplyr)) {
   library(dplyr)
 }
 
+if (!require(readr)) {
+  install.packages("readr")
+  library(readr)
+}
+
 remDr <- RSelenium::remoteDriver(remoteServerAddr = "bleaguer-selenium1",
                                  port = 4444L,
                                  browserName = "chrome")
@@ -29,7 +33,18 @@ exception.games <- c(4090)
 irregular.games <- c()
 
 season <- "2018-19"
-df.games <- subset(b.games, Season == season)
+df.games <- read_csv("games.csv",
+                     cols(
+                       ScheduleKey = col_integer(),
+                       Season = col_factor(),
+                       EventId = col_integer(),
+                       Date = col_character(),
+                       Arena = col_character(),
+                       Attendance = col_integer(),
+                       HomeTeamId = col_integer(),
+                       AwayTeamId = col_integer()),
+                     col_names = TRUE,
+                     locale = readr::locale(encoding = "UTF-8"))
 
 for (idx in seq(1:nrow(df.games))) {
   key <- df.games[idx,]$ScheduleKey
