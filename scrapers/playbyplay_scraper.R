@@ -88,9 +88,23 @@ for (idx in seq(1:nrow(df.games))) {
     next
   }
 
-  array.periods <- html.pbyp %>%
-    html_nodes("#game__playbyplay__inner > ul.playbyplay_contents.playbyplay_contents_text > li") %>%
-    html_children()
-
-  print(array.periods)    
+  nodes.period <- html.pbyp %>%
+    html_nodes("#game__playbyplay__inner > ul.playbyplay_contents.playbyplay_contents_text > li > ul")
+  for (period_node in nodes.period) {
+    period_num <- as.integer(html_attr(period_node, "data-period"))
+    print(period_num)
+    
+    nodes.actions <- html_nodes(period_node, "li")
+    for (action_node in nodes.actions) {
+      data_no <- as.integer(html_attr(action_node, "data-no"))
+      action_cd <- html_attr(action_node, "data-action-cd")
+      home_away <- html_attr(action_node, "class")
+      
+      print(paste(data_no, action_cd, home_away))
+    }
+  }
+  
+  break
 }
+
+
