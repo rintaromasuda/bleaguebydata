@@ -99,8 +99,17 @@ for (idx in seq(1:nrow(df.games))) {
       data_no <- as.integer(html_attr(action_node, "data-no"))
       action_cd <- html_attr(action_node, "data-action-cd")
       home_away <- html_attr(action_node, "class")
-      
-      print(paste(data_no, action_cd, home_away))
+     
+      nodes.divs <- html_nodes(action_node, "div")
+      player_data <- ""
+      for (div_node in nodes.divs) {
+        class_name <- html_attr(div_node, "class")
+        if (class_name == "player_data") {
+          player_data <- html_text(html_node(div_node, "p"))
+        }
+      }
+       
+      print(paste(data_no, action_cd, home_away, player_data))
     }
   }
   
