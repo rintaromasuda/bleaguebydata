@@ -92,8 +92,7 @@ for (idx in seq(1:nrow(df.games))) {
     html_nodes("#game__playbyplay__inner > ul.playbyplay_contents.playbyplay_contents_text > li > ul")
   for (period_node in nodes.period) {
     period_num <- as.integer(html_attr(period_node, "data-period"))
-    print(period_num)
-    
+
     nodes.actions <- html_nodes(period_node, "li")
     for (action_node in nodes.actions) {
       data_no <- as.integer(html_attr(action_node, "data-no"))
@@ -102,18 +101,33 @@ for (idx in seq(1:nrow(df.games))) {
      
       nodes.divs <- html_nodes(action_node, "div")
       player_data <- ""
+      clock <- ""
+      image_url <- ""
       for (div_node in nodes.divs) {
         class_name <- html_attr(div_node, "class")
         if (class_name == "player_data") {
           player_data <- html_text(html_node(div_node, "p"))
+        } else if (class_name== "time_point_wrap") {
+          clock <- html_text(html_node(div_node, "p"))
+        } else if (class_name == "player_img") {
+          image_url <- html_attr(div_node, "style")
         }
       }
        
-      print(paste(data_no, action_cd, home_away, player_data))
+      df.action <- data.frame(
+        SheduleKey = key,
+        HomeAway = home_away,
+        Period = period_num,
+        DataNo = data_no,
+        ActionCd = action_cd,
+        Clock = clock,
+        PlayerData = player_data,
+        ImageUrl = image_url
+      )
+      
+      df.result <- rbind(df.result, df.action)
     }
   }
-  
-  break
 }
 
 
