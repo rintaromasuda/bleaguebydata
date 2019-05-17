@@ -22,7 +22,7 @@ remDr <- RSelenium::remoteDriver(remoteServerAddr = "bleaguer-selenium1",
                                  browserName = "chrome")
 remDr$open()
 
-df.result <- data.frame()
+df_result <- data.frame()
 scraped.games <- unique(b.games.boxscore$ScheduleKey)
 exception.games <- c(4090)
 irregular.games <- c()
@@ -42,8 +42,11 @@ df.games <- read_csv("games.csv",
                      locale = readr::locale(encoding = "UTF-8"))
 
 for (idx in seq(1:nrow(df.games))) {
+  
+  df_game <- data.frame()
 
-  key <- df.games[idx,]$ScheduleKey
+  #key <- df.games[idx,]$ScheduleKey
+  key <- 4150
   if (key %in% df.result$ScheduleKey | key %in% exception.games) {
     print(paste("Already done. Skipping->", key))
     next
@@ -115,7 +118,7 @@ for (idx in seq(1:nrow(df.games))) {
       }
        
       df.action <- data.frame(
-        SheduleKey = key,
+        ScheduleKey = key,
         HomeAway = home_away,
         Period = period_num,
         DataNo = data_no,
@@ -125,9 +128,16 @@ for (idx in seq(1:nrow(df.games))) {
         ImageUrl = image_url
       )
       
-      df.result <- rbind(df.result, df.action)
+      df_game <- rbind(df_game, df.action)
+      
     }
+    
   }
+  
+  df_game$TeamId <- ifelse(grepl("home", df_game$HomeAway), homeTeamId, ifelse(grepl("away", df_game$HomeAway), awayTeamId, NA))
+  
+  df_result <- rbind(df_result, df_game)
 }
+
 
 
