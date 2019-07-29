@@ -25,8 +25,8 @@ season <- "2018-19"
 leagues <- c("B1", "B2")
 scheduleKeys <- subset(b.games, Season == season)$ScheduleKey
 
-b1.events <- c(2)
-b2.events <- c(7)
+b1.events <- c(3,4)
+b2.events <- c(8,17)
 
 for (league in leagues) {
   # Target relevant events only

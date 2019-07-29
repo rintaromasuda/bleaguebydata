@@ -45,9 +45,8 @@ for (idx in seq(1:nrow(df.games))) {
   
   df_game <- data.frame()
 
-  #key <- df.games[idx,]$ScheduleKey
-  key <- 4150
-  if (key %in% df.result$ScheduleKey | key %in% exception.games) {
+  key <- df.games[idx,]$ScheduleKey
+  if (key %in% df_result$ScheduleKey | key %in% exception.games) {
     print(paste("Already done. Skipping->", key))
     next
   }
@@ -117,7 +116,7 @@ for (idx in seq(1:nrow(df.games))) {
         }
       }
        
-      df.action <- data.frame(
+      df_action <- data.frame(
         ScheduleKey = key,
         HomeAway = home_away,
         Period = period_num,
@@ -128,7 +127,7 @@ for (idx in seq(1:nrow(df.games))) {
         ImageUrl = image_url
       )
       
-      df_game <- rbind(df_game, df.action)
+      df_game <- rbind(df_game, df_action)
       
     }
     
@@ -139,5 +138,78 @@ for (idx in seq(1:nrow(df.games))) {
   df_result <- rbind(df_result, df_game)
 }
 
+library(dplyr)
 
+df.target <- GetGameSummary()
+df.target <- subset(df.target, Season == "2018-19" & Category == "Regular" & League == "B2")
 
+df.play <- df_result %>%
+  group_by(ScheduleKey, TeamId, ActionCd) %>%
+  summarise(N = n())
+
+df <- merge(df.target, df.play, Key = c("ScheduleKey, TeamId"))
+
+df %<>%
+  group_by(TeamId, ActionCd) %>%
+  summarize(N = sum(N))
+
+df$Type <- ifelse(df$ActionCd == "1" | df$ActionCd == "2", "スリー",
+                  ifelse(df$ActionCd == "3" | df$ActionCd == "5", "ペリメーター",
+                  ifelse(df$ActionCd == "4" | df$ActionCd == "6", "ペイント", NA)))
+
+df %<>%
+  filter(!is.na(Type)) %>%
+  group_by(TeamId) %>%
+  summarize(F3GM = sum(N[ActionCd == "1"]),
+            F3GMNot = sum(N[ActionCd == "2"]),
+            FPeliM = sum(N[ActionCd == "3"]),
+            FPeliMNot = sum(N[ActionCd == "5"]),
+            FPaintM = sum(N[ActionCd == "4"]),
+            FPaintMNot = sum(N[ActionCd == "6"]))
+
+df$F3GR <- df$F3GM / (df$F3GM + df$F3GMNot)
+df$FPeliR <- df$FPeliM / (df$FPeliM + df$FPeliMNot)
+df$FPaintR <- df$FPaintM / (df$FPaintM + df$FPaintMNot)
+
+df <- merge(df, subset(b.teams, Season == "2018-19"), by = "TeamId")
+
+df.target <-
+  rbind(
+    data.frame(
+      TeamName = df$NameShort,
+      SuccessRate = df$FPaintR,
+      Type = "ペイント"
+    ),
+    data.frame(
+      TeamName = df$NameShort,
+      SuccessRate = df$FPeliR,
+      Type = "ペリメーター"
+    ),
+    data.frame(
+      TeamName = df$NameShort,
+      SuccessRate = df$F3GR,
+      Type = "スリー"
+    )
+  )
+
+library(ggplot2)
+
+ggplot() +
+  geom_bar(data = df.target,
+           aes(x = TeamName,
+               y = SuccessRate,
+               fill = Type),
+           position = "dodge",
+           stat = "identity") +
+  ggtitle("各エリア別のシュート成功率（2018-19 レギュラーシーズン）") +
+  xlab("") +
+  ylab("シュート成功率") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.text.x = element_text(angle = 45, vjust = 0.5),
+    legend.title = element_blank()
+  )
+
+ggsave("B2_FGRPerArea.jpeg", width = 8, height = 5)
