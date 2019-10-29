@@ -21,7 +21,7 @@ if (!require(rvest)) {
 
 df.result <- data.frame()
 
-season <- "2018-19"
+season <- "2019-20"
 leagues <- c("B1", "B2")
 scheduleKeys <- subset(b.games, Season == season)$ScheduleKey
 

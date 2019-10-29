@@ -32,7 +32,7 @@ scraped.games <- unique(b.games.summary$ScheduleKey)
 exception.games <- c(4090)
 irregular.games <- c()
 
-season <- "2018-19"
+season <- "2019-20"
 df.games <- read_csv("games.csv",
                      cols(
                        ScheduleKey = col_integer(),
