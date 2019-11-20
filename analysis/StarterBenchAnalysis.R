@@ -61,9 +61,9 @@ plotOneTeam <- function(teamName) {
     as.data.frame()
   df <- merge(df, df_box, by = c("ScheduleKey", "TeamId"))
   df <- merge(df, b.teams[, c("Season", "TeamId", "NameLong")], by = c("Season", "TeamId"))
-
+  
   ggplot() +
-    geom_tile(data = subset(df, TeamName == teamName),
+    geom_tile(data = subset(df, TeamName == teamName & Category == "Regular"),
               aes(x = Game.Index,
                   y = reorder(LatestPlayerName, as.integer(Position)),
                   fill = StarterBench),
@@ -87,5 +87,4 @@ plotOneTeam <- function(teamName) {
     ) +
     facet_grid(~Season)
 }
-plotOneTeam("ìè")
-  
+plotOneTeam("å·å´Ž")
