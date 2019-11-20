@@ -34,17 +34,58 @@ ggplot() +
                    y = PTS_Bench / PTS_Total))
 
 ggplot() +
-  geom_boxplot(data = df,
-               aes(x = Season,
-                   y = FGM_Bench / FGA_Bench))
+  geom_line(data = df,
+            aes(x = Game.Index,
+                y = PTS_Bench / PTS_Total,
+                color = Season),
+            size = 2)
+
+ggplot() +
+  geom_line(data = df,
+            aes(x = Game.Index,
+                y = MIN_Bench / MIN_Total,
+                color = Season),
+            size = 2)
 
 ggplot() +
   geom_boxplot(data = df,
                aes(x = Season,
-                   y = PTS_Bench,
-                   fill = "S")) +
-  geom_boxplot(data = df,
-               aes(x = Season,
-                   y = PTS_Starters,
-                   fill = "B"))
+                   y = FGM_Bench / FGA_Bench))
+
+plotOneTeam <- function(teamName) {
+  df <- GetGameSummary()
+  df_box <-
+    b.games.boxscore %>%
+    group_by(PlayerId) %>%
+    mutate(LatestPlayerName = last(Player)) %>%
+    as.data.frame()
+  df <- merge(df, df_box, by = c("ScheduleKey", "TeamId"))
+  df <- merge(df, b.teams[, c("Season", "TeamId", "NameLong")], by = c("Season", "TeamId"))
+
+  ggplot() +
+    geom_tile(data = subset(df, TeamName == teamName),
+              aes(x = Game.Index,
+                  y = reorder(LatestPlayerName, as.integer(Position)),
+                  fill = StarterBench),
+              width = 0.5,
+              height = 0.8,
+              size = 2) +
+    ylab("") +
+    xlab("") +
+    #scale_fill_continuous(high = "blue", low = "white") +
+    scale_x_continuous(breaks = seq(5, 60, by = 5)) +
+    theme(plot.background = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.background = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks = element_blank(),
+          axis.text.y = element_text(hjust = 1, size = 8),
+          axis.text.x = element_text(size = 8),
+          strip.text = element_text(face = "bold"),
+          strip.background = element_rect(fill = "white", colour = "white")
+    ) +
+    facet_grid(~Season)
+}
+plotOneTeam("ìè")
   

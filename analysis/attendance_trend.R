@@ -98,16 +98,21 @@ df.cum <- df %>%
 
 ggplot() +
   geom_line(data = subset(df.cum, Season == "2016-17"),
-            aes(x = Date + 365 + 365,
+            aes(x = Date + (365 * 3),
                 y = CumAttendance,
                 color = Season),
             size = 2) +
   geom_line(data = subset(df.cum, Season == "2017-18"),
-            aes(x = Date + 365,
+            aes(x = Date + (365 * 2),
                 y = CumAttendance,
                 color = Season),
             size = 2) +
   geom_line(data = subset(df.cum, Season == "2018-19"),
+            aes(x = Date + 365,
+                y = CumAttendance,
+                color = Season),
+            size = 2) +
+  geom_line(data = subset(df.cum, Season == "2019-20"),
             aes(x = Date,
                 y = CumAttendance,
                 color = Season),
