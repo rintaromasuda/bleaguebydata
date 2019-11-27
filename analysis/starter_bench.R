@@ -110,3 +110,81 @@ ggplot() +
   theme_bw()
 ggsave(paste0("BenchMINRate_", teamId, ".jpg"), width = 8, height = 5)
 
+plotPtsHistory <- function() {
+  df <- GetGameSummary()
+  df <- subset(df, Season == b.current.season)
+  df_box <-
+    b.games.boxscore %>%
+    group_by(PlayerId) %>%
+    mutate(LatestPlayerName = last(Player),
+           TotalPTS = sum(PTS[TeamId == teamId])) %>%
+    as.data.frame()
+  df <- merge(df, df_box, by = c("ScheduleKey", "TeamId"))
+  df <- merge(df, b.teams[, c("Season", "TeamId", "NameLong")], by = c("Season", "TeamId"))
+  
+  ggplot() +
+    geom_point(data = subset(df, TeamId == teamId & Category == "Regular"),
+              aes(x = Game.Index,
+                  y = reorder(LatestPlayerName, TotalPTS),
+                  color = StarterBench,
+                  size = PTS.y),
+              width = 0.6,
+              height = 0.8) +
+    ylab("") +
+    xlab("") +
+    scale_x_continuous(breaks = c(1, 10, 20, 30, 40, 50, 60)) +
+    theme(plot.background = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.background = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks = element_blank(),
+          axis.text.y = element_text(hjust = 1, size = 8),
+          axis.text.x = element_text(size = 8),
+          strip.text = element_text(face = "bold"),
+          strip.background = element_rect(fill = "white", colour = "white"),
+          legend.position="bottom",
+          legend.title = element_blank()
+    ) +
+    facet_grid(~Season)
+}
+plotPtsHistory()
+ggsave(paste0("PtsHistory_", teamId, ".jpg"), width = 8, height = 5)
+
+plotMinHistory <- function() {
+  df <- GetGameSummary()
+  df <- subset(df, Season == b.current.season)
+  df_box <-
+    b.games.boxscore %>%
+    group_by(PlayerId) %>%
+    mutate(LatestPlayerName = last(Player),
+           TotalPTS = sum(PTS[TeamId == teamId])) %>%
+    as.data.frame()
+  df <- merge(df, df_box, by = c("ScheduleKey", "TeamId"))
+  df <- merge(df, b.teams[, c("Season", "TeamId", "NameLong")], by = c("Season", "TeamId"))
+  
+  ggplot() +
+    geom_point(data = subset(df, TeamId == teamId & Category == "Regular"),
+               aes(x = Game.Index,
+                   y = reorder(LatestPlayerName, TotalPTS),
+                   color = StarterBench,
+                   size = MIN)) +
+    ylab("") +
+    xlab("") +
+    scale_x_continuous(breaks = c(1, 10, 20, 30, 40, 50, 60)) +
+    theme(plot.background = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.background = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks = element_blank(),
+          axis.text.y = element_text(hjust = 1, size = 8),
+          axis.text.x = element_text(size = 8),
+          strip.text = element_text(face = "bold"),
+          strip.background = element_rect(fill = "white", colour = "white"),
+          legend.position="bottom",
+          legend.title = element_blank()
+    ) +
+    facet_grid(~Season)
+}
+plotMinHistory()
