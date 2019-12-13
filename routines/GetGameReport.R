@@ -1,4 +1,4 @@
-target.key <- 4318
+target.key <- 4317
 home.teamName <- ""
 away.teamName <- ""
 game.date <- ""
@@ -10,6 +10,7 @@ library(bleaguer)
 library(dplyr)
 library(ggplot2)
 library(ggrepel)
+library(cowplot)
 
 if (!require(rvest)) {
   install.packages("rvest")
@@ -230,11 +231,11 @@ df_stats$X <- ifelse(df_stats$Period <= 5,
                      (df_stats$Period - 1) * 10 + 5,
                      (df_stats$Period - 2) * 10 + (df_stats$Period - 5) * 5 + 2.5)
 df_stats$Y <- ifelse(df_stats$Period <= 2, max(df_point$Pts) + y.adjust - 10, 15)
-df_stats$Y <- ifelse(df_stats$Team != home.teamName, df_stats$Y - 7, df_stats$Y)
+df_stats$Y <- ifelse(df_stats$Team != home.teamName, df_stats$Y - 9, df_stats$Y)
 
-###############
-# Actual Plot #
-###############
+####################
+# Pts History Plot #
+####################
 home.longName <- subset(b.teams, Season == b.current.season & NameShort == home.teamName)[c("NameLong")][[1]]
 away.longName <- subset(b.teams, Season == b.current.season & NameShort == away.teamName)[c("NameLong")][[1]]
 plot.title <- paste0(b.current.season,
@@ -245,7 +246,6 @@ plot.title <- paste0(b.current.season,
                      " (",
                      game.date,
                      ")")
-
 ggplot() +
   geom_vline(xintercept =  0, linetype="dashed", color = "grey", size=1) +
   geom_vline(xintercept = 10, linetype="dashed", color = "grey", size=1) +
@@ -304,13 +304,55 @@ ggplot() +
     legend.text = element_text(size = 12)
   )
 
-###############
-# Output File #
-###############
 fileName <- paste0("PtsHistory_",
                    target.key,
                    ".jpg")
 ggsave(fileName, width = 9, height = 6)
 
+###################
+# Per Player Plot #
+###################
+df_per_player <-
+  df %>%
+  filter(!is.na(PastMinInGameClass)) %>%
+  group_by(Team, PlayerId, PastMinInGameClass) %>%
+  summarize(PTS = sum(PtsAdded)) %>%
+  filter(PTS > 0) %>%
+  group_by(PlayerId) %>%
+  mutate(TotalPTS = sum(PTS)) %>%
+  as.data.frame()
 
+df_player <-
+  b.games.boxscore %>%
+  group_by(PlayerId) %>%
+  summarise(Name = last(Player)) %>%
+  as.data.frame()
 
+df_per_player <- merge(df_per_player, df_player, by = c("PlayerId"))
+
+ggplot() +
+  geom_vline(xintercept = 10, linetype="dashed", color = "grey", size=1) +
+  geom_vline(xintercept = 20, linetype="dashed", color = "grey", size=1) +
+  geom_vline(xintercept = 30, linetype="dashed", color = "grey", size=1) +
+  geom_vline(xintercept = 40, linetype="dashed", color = "grey", size=1) +
+  geom_point(data = df_per_player,
+             aes(x = PastMinInGameClass,
+                 y = reorder(paste0(Name,
+                                    " (",
+                                    as.character(TotalPTS),
+                                    ")"),
+                             TotalPTS),
+                 color = Team,
+                 size = PTS)) +
+  guides(color = FALSE, size=guide_legend(title="得点 (分単位)")) +
+  labs(title = plot.title,
+       subtitle = "() 内は選手の総得点") +
+  ylab("") +
+  xlab("経過時間") +
+  facet_wrap(~Team, nrow = 2, scales = "free") +
+  theme_bw()
+
+fileName <- paste0("PerPlayer_",
+                   target.key,
+                   ".jpg")
+ggsave(fileName, width = 9, height = 6)
