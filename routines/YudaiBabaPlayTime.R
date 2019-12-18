@@ -111,9 +111,9 @@ ggplot() +
   scale_fill_manual(guide_legend(title = "MIN"), values = c("white",
                                                             "gray90",
                                                             "skyblue1",
-                                                            "skyblue4",
                                                             "springgreen1",
-                                                            "springgreen4",
+                                                            "springgreen3",
+                                                            "darkgreen",
                                                             "red1")) +
   scale_x_continuous(breaks = seq(5, 82, by = 5)) +
   theme(plot.background = element_blank(),
