@@ -1,4 +1,4 @@
-target.key <- 4317
+target.key <- 4332
 home.teamName <- ""
 away.teamName <- ""
 game.date <- ""
@@ -161,6 +161,8 @@ processPlayByPlayData <- function(df){
 df <- scrapePlayByPlayData()
 df <- processPlayByPlayData(df)
 
+df$Team <- factor(df$Team, levels = c(home.teamName, away.teamName))
+
 ############
 # Q labels #
 ############
@@ -227,9 +229,9 @@ df_stats <-
             FTM = sum(ActionCd %in% c("7")),
             FTA = sum(ActionCd %in% c("7", "8"))) %>%
   as.data.frame()
-df_stats$X <- ifelse(df_stats$Period <= 5,
+df_stats$X <- ifelse(df_stats$Period < 5,
                      (df_stats$Period - 1) * 10 + 5,
-                     (df_stats$Period - 2) * 10 + (df_stats$Period - 5) * 5 + 2.5)
+                     (df_stats$Period + 3) * 5 + 2.5)
 df_stats$Y <- ifelse(df_stats$Period <= 2, max(df_point$Pts) + y.adjust - 10, 15)
 df_stats$Y <- ifelse(df_stats$Team != home.teamName, df_stats$Y - 9, df_stats$Y)
 
@@ -246,12 +248,22 @@ plot.title <- paste0(b.current.season,
                      " (",
                      game.date,
                      ")")
-ggplot() +
-  geom_vline(xintercept =  0, linetype="dashed", color = "grey", size=1) +
-  geom_vline(xintercept = 10, linetype="dashed", color = "grey", size=1) +
-  geom_vline(xintercept = 20, linetype="dashed", color = "grey", size=1) +
-  geom_vline(xintercept = 30, linetype="dashed", color = "grey", size=1) +
-  geom_vline(xintercept = 40, linetype="dashed", color = "grey", size=1) +
+
+gp1 <-
+  ggplot() +
+    geom_vline(xintercept =  0, linetype="dashed", color = "grey", size=1) +
+    geom_vline(xintercept = 10, linetype="dashed", color = "grey", size=1) +
+    geom_vline(xintercept = 20, linetype="dashed", color = "grey", size=1) +
+    geom_vline(xintercept = 30, linetype="dashed", color = "grey", size=1) +
+    geom_vline(xintercept = 40, linetype="dashed", color = "grey", size=1)
+
+if(max(df_point$Min) > 40) {
+gp1 <-
+  gp1 +
+    geom_vline(xintercept = 45, linetype="dashed", color = "grey", size=1)
+}
+
+gp1 +
   geom_text(data = subset(df_label, X < max(df_point$Min)),
             aes(x = X,
                 y = max(df_point$Pts) + y.adjust,
@@ -330,11 +342,14 @@ df_player <-
 
 df_per_player <- merge(df_per_player, df_player, by = c("PlayerId"))
 
-ggplot() +
-  geom_vline(xintercept = 10, linetype="dashed", color = "grey", size=1) +
-  geom_vline(xintercept = 20, linetype="dashed", color = "grey", size=1) +
-  geom_vline(xintercept = 30, linetype="dashed", color = "grey", size=1) +
-  geom_vline(xintercept = 40, linetype="dashed", color = "grey", size=1) +
+gp2 <-
+  ggplot() +
+    geom_vline(xintercept = 10, linetype="dashed", color = "grey", size=1) +
+    geom_vline(xintercept = 20, linetype="dashed", color = "grey", size=1) +
+    geom_vline(xintercept = 30, linetype="dashed", color = "grey", size=1) +
+    geom_vline(xintercept = 40, linetype="dashed", color = "grey", size=1)
+
+gp2 +
   geom_point(data = df_per_player,
              aes(x = PastMinInGameClass,
                  y = reorder(paste0(Name,
