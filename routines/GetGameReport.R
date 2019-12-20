@@ -1,4 +1,4 @@
-target.key <- 4332
+target.key <- 4354
 home.teamName <- ""
 away.teamName <- ""
 game.date <- ""
@@ -158,10 +158,73 @@ processPlayByPlayData <- function(df){
   return(df)
 }
 
-df <- scrapePlayByPlayData()
-df <- processPlayByPlayData(df)
+scrapeBoxScoreData <- function(){
+  df_boxscore <- data.frame()
+  
+  url.detail <- paste0("https://www.bleague.jp/game_detail/?ScheduleKey=",
+                      as.character(target.key),
+                      "&TAB=B")
+  print(url.detail)
+  
+  try.count <- 1
+  try.success <- FALSE
+  try.threshold <- 60
+  expected.table.count <- 13
+  while (try.count <= try.threshold) {
+    remDr$navigate(url.detail)
+    pageSource <- remDr$getPageSource()
+    html.boxscore <- read_html(pageSource[[1]])
+    tables.boxscore <- html_table(html.boxscore)
+    # Check the page and leave if it's good
+    if ((length(tables.boxscore) >= expected.table.count) &&
+        (nrow(tables.boxscore[[4]]) > 0) &&
+        (nrow(tables.boxscore[[5]]) > 0)) {
+      try.success <- TRUE
+      break
+    } else {
+      Sys.sleep(0.5)
+      print(paste("Retry the page load...(", try.count, ")", sep = ""))
+      try.count <- try.count + 1
+    }
+  }
+  
+  if (!try.success) {
+    stop(paste0("Error getting data from ", url.detail))
+  }  
 
-df$Team <- factor(df$Team, levels = c(home.teamName, away.teamName))
+  tables.boxscore <- html.boxscore %>%
+    html_nodes(xpath = "//ul[@class=\"boxscore_contents\"]/li[@data-period=\"0\"]//tbody")
+  
+  for(tbl in tables.boxscore){
+    homeAway <- html_attr(tbl, "class")
+    for(player in html_nodes(tbl, "tr")){
+      playerId <- html_attr(player, "data-player-id")
+      cols <- html_nodes(player, "td")
+      number <- paste0("#", html_text(cols[1]))
+      starterBench <- html_text(cols[2])
+      name <- html_text(html_node(cols[3], "a > span.for-pc"))
+      nameShort <- html_text(html_node(cols[3], "a > span.for-sp"))
+      
+      df_player <- data.frame(
+        HomeAway = homeAway,
+        PlayerId = playerId,
+        Number = number,
+        StarterBench = starterBench,
+        Name = name,
+        NameShort = nameShort
+      )
+      
+      df_boxscore <- rbind(df_boxscore, df_player)
+    }
+  }
+  
+  return(df_boxscore)
+}
+
+df_pbyp <- scrapePlayByPlayData()
+df_pbyp <- processPlayByPlayData(df_pbyp)
+
+df_pbyp$Team <- factor(df_pbyp$Team, levels = c(home.teamName, away.teamName))
 
 ############
 # Q labels #
@@ -182,7 +245,7 @@ df_label <-
 # Timeout #
 ###########
 df_timeout <-
-  df %>%
+  df_pbyp %>%
   filter(!is.na(PastMinInGameClass)) %>%
   filter(ActionCd == "88") %>%
   as.data.frame()
@@ -191,7 +254,7 @@ df_timeout <-
 # Point #
 #########
 df_point_per_min <-
-  df %>%
+  df_pbyp %>%
   filter(!is.na(PastMinInGameClass)) %>%
   arrange(DataNo) %>%
   group_by(PastMinInGameClass) %>%
@@ -221,7 +284,7 @@ df_point$Direction = ifelse(df_point$Diff > 0, 1,
 # Stats #
 #########
 df_stats <-
-  df %>%
+  df_pbyp %>%
   filter(!is.na(PastMinInGameClass)) %>%
   group_by(Team, Period) %>%
   summarize(FGM = sum(ActionCd %in% c("1", "3", "4")),
@@ -321,53 +384,7 @@ fileName <- paste0("PtsHistory_",
                    ".jpg")
 ggsave(fileName, width = 9, height = 6)
 
-###################
-# Per Player Plot #
-###################
-df_per_player <-
-  df %>%
-  filter(!is.na(PastMinInGameClass)) %>%
-  group_by(Team, PlayerId, PastMinInGameClass) %>%
-  summarize(PTS = sum(PtsAdded)) %>%
-  filter(PTS > 0) %>%
-  group_by(PlayerId) %>%
-  mutate(TotalPTS = sum(PTS)) %>%
-  as.data.frame()
-
-df_player <-
-  b.games.boxscore %>%
-  group_by(PlayerId) %>%
-  summarise(Name = last(Player)) %>%
-  as.data.frame()
-
-df_per_player <- merge(df_per_player, df_player, by = c("PlayerId"))
-
-gp2 <-
-  ggplot() +
-    geom_vline(xintercept = 10, linetype="dashed", color = "grey", size=1) +
-    geom_vline(xintercept = 20, linetype="dashed", color = "grey", size=1) +
-    geom_vline(xintercept = 30, linetype="dashed", color = "grey", size=1) +
-    geom_vline(xintercept = 40, linetype="dashed", color = "grey", size=1)
-
-gp2 +
-  geom_point(data = df_per_player,
-             aes(x = PastMinInGameClass,
-                 y = reorder(paste0(Name,
-                                    " (",
-                                    as.character(TotalPTS),
-                                    ")"),
-                             TotalPTS),
-                 color = Team,
-                 size = PTS)) +
-  guides(color = FALSE, size=guide_legend(title="得点 (分単位)")) +
-  labs(title = plot.title,
-       subtitle = "() 内は選手の総得点") +
-  ylab("") +
-  xlab("経過時間") +
-  facet_wrap(~Team, nrow = 2, scales = "free") +
-  theme_bw()
-
-fileName <- paste0("PerPlayer_",
-                   target.key,
-                   ".jpg")
-ggsave(fileName, width = 9, height = 6)
+##############
+# Plus Minus #
+##############
+df_boxscore <- scrapeBoxScoreData()
