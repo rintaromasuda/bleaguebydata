@@ -1,4 +1,4 @@
-target.key <- 4354
+target.key <- 4356
 home.teamName <- ""
 away.teamName <- ""
 game.date <- ""
@@ -10,7 +10,7 @@ library(bleaguer)
 library(dplyr)
 library(ggplot2)
 library(ggrepel)
-library(cowplot)
+library(stringr)
 
 if (!require(rvest)) {
   install.packages("rvest")
@@ -158,69 +158,6 @@ processPlayByPlayData <- function(df){
   return(df)
 }
 
-scrapeBoxScoreData <- function(){
-  df_boxscore <- data.frame()
-  
-  url.detail <- paste0("https://www.bleague.jp/game_detail/?ScheduleKey=",
-                      as.character(target.key),
-                      "&TAB=B")
-  print(url.detail)
-  
-  try.count <- 1
-  try.success <- FALSE
-  try.threshold <- 60
-  expected.table.count <- 13
-  while (try.count <= try.threshold) {
-    remDr$navigate(url.detail)
-    pageSource <- remDr$getPageSource()
-    html.boxscore <- read_html(pageSource[[1]])
-    tables.boxscore <- html_table(html.boxscore)
-    # Check the page and leave if it's good
-    if ((length(tables.boxscore) >= expected.table.count) &&
-        (nrow(tables.boxscore[[4]]) > 0) &&
-        (nrow(tables.boxscore[[5]]) > 0)) {
-      try.success <- TRUE
-      break
-    } else {
-      Sys.sleep(0.5)
-      print(paste("Retry the page load...(", try.count, ")", sep = ""))
-      try.count <- try.count + 1
-    }
-  }
-  
-  if (!try.success) {
-    stop(paste0("Error getting data from ", url.detail))
-  }  
-
-  tables.boxscore <- html.boxscore %>%
-    html_nodes(xpath = "//ul[@class=\"boxscore_contents\"]/li[@data-period=\"0\"]//tbody")
-  
-  for(tbl in tables.boxscore){
-    homeAway <- html_attr(tbl, "class")
-    for(player in html_nodes(tbl, "tr")){
-      playerId <- html_attr(player, "data-player-id")
-      cols <- html_nodes(player, "td")
-      number <- paste0("#", html_text(cols[1]))
-      starterBench <- html_text(cols[2])
-      name <- html_text(html_node(cols[3], "a > span.for-pc"))
-      nameShort <- html_text(html_node(cols[3], "a > span.for-sp"))
-      
-      df_player <- data.frame(
-        HomeAway = homeAway,
-        PlayerId = playerId,
-        Number = number,
-        StarterBench = starterBench,
-        Name = name,
-        NameShort = nameShort
-      )
-      
-      df_boxscore <- rbind(df_boxscore, df_player)
-    }
-  }
-  
-  return(df_boxscore)
-}
-
 df_pbyp <- scrapePlayByPlayData()
 df_pbyp <- processPlayByPlayData(df_pbyp)
 
@@ -289,14 +226,18 @@ df_stats <-
   group_by(Team, Period) %>%
   summarize(FGM = sum(ActionCd %in% c("1", "3", "4")),
             FGA = sum(ActionCd %in% c("1", "2", "3", "4", "5", "6")),
+            F2GM = sum(ActionCd %in% c("3", "4")),
+            F2GA = sum(ActionCd %in% c("3", "4", "5", "6")),
+            F3GM = sum(ActionCd %in% c("1")),
+            F3GA = sum(ActionCd %in% c("1", "2")),
             FTM = sum(ActionCd %in% c("7")),
             FTA = sum(ActionCd %in% c("7", "8"))) %>%
   as.data.frame()
 df_stats$X <- ifelse(df_stats$Period < 5,
                      (df_stats$Period - 1) * 10 + 5,
                      (df_stats$Period + 3) * 5 + 2.5)
-df_stats$Y <- ifelse(df_stats$Period <= 2, max(df_point$Pts) + y.adjust - 10, 15)
-df_stats$Y <- ifelse(df_stats$Team != home.teamName, df_stats$Y - 9, df_stats$Y)
+df_stats$Y <- ifelse(df_stats$Period <= 2, max(df_point$Pts) + y.adjust - 10, 25)
+df_stats$Y <- ifelse(df_stats$Team != home.teamName, df_stats$Y - 17, df_stats$Y)
 
 ####################
 # Pts History Plot #
@@ -335,10 +276,15 @@ gp1 +
   geom_text(data = subset(df_stats, X < max(df_point$Min)),
             aes(x = X,
                 y = Y,
-                label = paste0("FG: ",
-                               as.character(FGM),
+                label = paste0("2P: ",
+                               as.character(F2GM),
                                "/",
-                               as.character(FGA),
+                               as.character(F2GA),
+                               "\n",
+                               "3P: ",
+                               as.character(F3GM),
+                               "/",
+                               as.character(F3GA),
                                "\n",
                                "FT: ",
                                as.character(FTM),
@@ -387,4 +333,185 @@ ggsave(fileName, width = 9, height = 6)
 ##############
 # Plus Minus #
 ##############
+scrapeBoxScoreData <- function(){
+  df_boxscore <- data.frame()
+  
+  url.detail <- paste0("https://www.bleague.jp/game_detail/?ScheduleKey=",
+                       as.character(target.key),
+                       "&TAB=B")
+  print(url.detail)
+  
+  try.count <- 1
+  try.success <- FALSE
+  try.threshold <- 60
+  expected.table.count <- 13
+  while (try.count <= try.threshold) {
+    remDr$navigate(url.detail)
+    pageSource <- remDr$getPageSource()
+    html.boxscore <- read_html(pageSource[[1]])
+    tables.boxscore <- html_table(html.boxscore)
+    # Check the page and leave if it's good
+    if ((length(tables.boxscore) >= expected.table.count) &&
+        (nrow(tables.boxscore[[4]]) > 0) &&
+        (nrow(tables.boxscore[[5]]) > 0)) {
+      try.success <- TRUE
+      break
+    } else {
+      Sys.sleep(0.5)
+      print(paste("Retry the page load...(", try.count, ")", sep = ""))
+      try.count <- try.count + 1
+    }
+  }
+  
+  if (!try.success) {
+    stop(paste0("Error getting data from ", url.detail))
+  }  
+  
+  tables.boxscore <- html.boxscore %>%
+    html_nodes(xpath = "//ul[@class=\"boxscore_contents\"]/li[@data-period=\"0\"]//tbody")
+  
+  for(tbl in tables.boxscore){
+    homeAway <- html_attr(tbl, "class")
+    team <- ifelse(grepl("home", homeAway, ignore.case = TRUE), home.teamName, away.teamName)
+    for(player in html_nodes(tbl, "tr")){
+      playerId <- html_attr(player, "data-player-id")
+      cols <- html_nodes(player, "td")
+      number <- paste0("#", html_text(cols[1]))
+      starterBench <- html_text(cols[2])
+      name <- html_text(html_node(cols[3], "a > span.for-pc"))
+      nameShort <- html_text(html_node(cols[3], "a > span.for-sp"))
+      
+      df_player <- data.frame(
+        Team = team,
+        PlayerId = playerId,
+        Number = number,
+        StarterBench = starterBench,
+        Name = name,
+        NameShort = nameShort
+      )
+      
+      df_boxscore <- rbind(df_boxscore, df_player)
+    }
+  }
+  
+  return(df_boxscore)
+}
+
 df_boxscore <- scrapeBoxScoreData()
+df_boxscore$Team <- factor(df_boxscore$Team, levels = c(home.teamName, away.teamName))
+
+#############
+# Calculate #
+#############
+calculatePlusMinus <- function(df_pbyp, df_boxscore){
+  df <- df_pbyp %>% arrange(DataNo) %>% as.data.frame()
+  
+  homeTeam <- rep(0, nrow(subset(df_boxscore, Team == home.teamName)))
+  names(homeTeam) <- df_boxscore[df_boxscore$Team == home.teamName,][["Number"]]
+  awayTeam <- rep(0, nrow(subset(df_boxscore, Team == away.teamName)))
+  names(awayTeam) <- df_boxscore[df_boxscore$Team == away.teamName,][["Number"]]
+  
+  homeOnCourt <- list()
+  awayOnCourt <- list()
+  
+  for(rowNum in 1:nrow(df)){
+    row <- df[rowNum,]
+    
+    if(row$ActionCd == "86"){
+      player_in <- str_extract(row$PlayerData, "#[0-9]+")
+      if(grepl("home", row$HomeAway, ignore.case = TRUE)) {
+        homeOnCourt <- append(homeOnCourt, player_in)
+        if(length(homeOnCourt) > 5){
+          stop("Home team more than 5 players!")
+        }
+      }else{
+        awayOnCourt <- append(awayOnCourt, player_in)
+        if(length(awayOnCourt) > 5){
+          stop("Away team more than 5 players!")
+        }
+      }
+    }else if(row$ActionCd == "89"){
+      splitted <- str_split(row$PlayerData, " ")[[1]]
+      player_out <- str_extract(splitted[1], "#[0-9]+")
+      player_in <- str_extract(splitted[4], "#[0-9]+")
+      
+      if(grepl("home", row$HomeAway, ignore.case = TRUE)) {
+        homeOnCourt <- homeOnCourt[homeOnCourt != player_out]
+        homeOnCourt <- append(homeOnCourt, player_in)
+        if(length(homeOnCourt) > 5){
+          stop("Home team more than 5 players!")
+        }
+      }else{
+        awayOnCourt <- awayOnCourt[awayOnCourt != player_out]
+        awayOnCourt <- append(awayOnCourt, player_in)
+        if(length(awayOnCourt) > 5){
+          stop("Away team more than 5 players!")
+        }
+      }
+    }else{
+      if(row$HomePtsAdded > 0){
+        homeTeam <-
+          append(homeTeam[names(homeTeam) %in% homeOnCourt] + row$HomePtsAdded,
+                 homeTeam[!names(homeTeam) %in% homeOnCourt])
+        awayTeam <-
+          append(awayTeam[names(awayTeam) %in% awayOnCourt] - row$HomePtsAdded,
+                 awayTeam[!names(awayTeam) %in% awayOnCourt])
+      }
+
+      if(row$AwayPtsAdded > 0){
+        homeTeam <-
+          append(homeTeam[names(homeTeam) %in% homeOnCourt] - row$AwayPtsAdded,
+                 homeTeam[!names(homeTeam) %in% homeOnCourt])
+        awayTeam <-
+          append(awayTeam[names(awayTeam) %in% awayOnCourt] + row$AwayPtsAdded,
+                 awayTeam[!names(awayTeam) %in% awayOnCourt])
+      }
+    }
+  }
+  
+  df_result <- data.frame(
+    Team = append(rep(home.teamName, length(homeTeam)), rep(away.teamName, length(awayTeam))),
+    Number = append(names(homeTeam), names(awayTeam)),
+    PlusMinus = append(homeTeam, awayTeam)
+  )
+  return(df_result)
+}
+
+df_plusminus <- calculatePlusMinus(df_pbyp, df_boxscore)
+df_adv_boxscore <- merge(df_boxscore, df_plusminus, by = c("Team", "Number"))
+
+#############
+# Visualize #
+#############
+ggplot() +
+  geom_hline(yintercept = 0, linetype="dashed", color = "grey", size=1) +
+  geom_bar(data = df_adv_boxscore,
+           aes(x = reorder(NameShort, desc(PlusMinus)),
+               y = PlusMinus,
+               fill = Team),
+           stat = "identity") +
+  geom_text(data = df_adv_boxscore,
+            aes(x = reorder(NameShort, desc(PlusMinus)),
+                y = 0,
+                hjust = ifelse(PlusMinus >= 0, -0.1, 1.1),
+                label = paste0(NameShort,
+                               " (",
+                               ifelse(PlusMinus > 0, "+", ""),
+                               as.character(PlusMinus),
+                               ")")),
+            size = 4,
+            angle = 90) +
+  labs(x = "",
+       y = "",
+       title = plot.title,
+       subtitle = "各選手の出場時間帯での得失点差（+-）") +
+  theme_bw() +
+  theme(
+    axis.text.x = element_blank(),
+    legend.title = element_blank()
+  )
+
+fileName <- paste0("PlusMinus_",
+                   target.key,
+                   ".jpg")
+ggsave(fileName, width = 9, height = 6)
