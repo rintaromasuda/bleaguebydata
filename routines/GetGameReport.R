@@ -1,4 +1,4 @@
-target.key <- 4356
+target.key <- 4350
 home.teamName <- ""
 away.teamName <- ""
 game.date <- ""
@@ -290,7 +290,8 @@ gp1 +
                                as.character(FTM),
                                "/",
                                as.character(FTA)),
-                color = Team)) +  
+                color = Team),
+            size = 4) +  
   geom_line(data = df_point,
             aes(x = Min,
                 y = Pts,
@@ -321,6 +322,7 @@ gp1 +
        subtitle = "▲はチームが取得したタイムアウト") +
   theme_bw() +
   theme(
+    legend.position="top",
     legend.title = element_blank(),
     legend.text = element_text(size = 12)
   )
@@ -328,7 +330,7 @@ gp1 +
 fileName <- paste0("PtsHistory_",
                    target.key,
                    ".jpg")
-ggsave(fileName, width = 9, height = 6)
+ggsave(fileName, width = 6, height = 9)
 
 ##############
 # Plus Minus #
@@ -486,7 +488,7 @@ df_adv_boxscore <- merge(df_boxscore, df_plusminus, by = c("Team", "Number"))
 ggplot() +
   geom_hline(yintercept = 0, linetype="dashed", color = "grey", size=1) +
   geom_bar(data = df_adv_boxscore,
-           aes(x = reorder(NameShort, desc(PlusMinus)),
+           aes(x = reorder(NameShort, PlusMinus),
                y = PlusMinus,
                fill = Team),
            stat = "identity") +
@@ -499,19 +501,189 @@ ggplot() +
                                ifelse(PlusMinus > 0, "+", ""),
                                as.character(PlusMinus),
                                ")")),
-            size = 4,
-            angle = 90) +
+            size = 4) +
   labs(x = "",
        y = "",
        title = plot.title,
-       subtitle = "各選手の出場時間帯での得失点差（+-）") +
+       subtitle = "各選手の出場時間帯での得失点差（＋－）") +
+  coord_flip() +
   theme_bw() +
   theme(
-    axis.text.x = element_blank(),
-    legend.title = element_blank()
+    axis.text.y = element_blank(),
+    legend.title = element_blank(),
+    legend.position="top"
   )
 
 fileName <- paste0("PlusMinus_",
                    target.key,
                    ".jpg")
-ggsave(fileName, width = 9, height = 6)
+ggsave(fileName, width = 6, height = 9)
+
+###############
+# Gannt Chart #
+###############
+getTimelineData <- function(df_pbyp, df_boxscore){
+  df <- df_pbyp %>% arrange(DataNo) %>% as.data.frame()
+  
+  df_result <- data.frame()
+
+  homeOnCourt <- list()
+  awayOnCourt <- list()  
+  lastPeriod <- 1
+  
+  for(rowNum in 1:nrow(df)){
+    row <- df[rowNum,]
+    
+    lastPeriod <- row$Period
+    
+    if(row$ActionCd == "86"){
+      player_in <- str_extract(row$PlayerData, "#[0-9]+")
+      df_data <- data.frame(
+        Team = row$Team,
+        Number = player_in,
+        Type = "In",
+        Time = row$PastMinInGame
+      )
+      df_result <- rbind(df_result, df_data)
+      
+      if(row$Team == home.teamName) {
+        homeOnCourt <- append(homeOnCourt, player_in)
+        if(length(homeOnCourt) > 5){
+          stop("Home team more than 5 players!")
+        }
+      }else{
+        awayOnCourt <- append(awayOnCourt, player_in)
+        if(length(awayOnCourt) > 5){
+          stop("Away team more than 5 players!")
+        }
+      }
+    }else if(row$ActionCd == "89"){
+      splitted <- str_split(row$PlayerData, " ")[[1]]
+      player_out <- str_extract(splitted[1], "#[0-9]+")
+      player_in <- str_extract(splitted[4], "#[0-9]+")
+
+      df_data <- data.frame(
+        Team = row$Team,
+        Number = player_out,
+        Type = "Out",
+        Time = row$PastMinInGame
+      )
+      df_result <- rbind(df_result, df_data)
+
+      df_data <- data.frame(
+        Team = row$Team,
+        Number = player_in,
+        Type = "In",
+        Time = row$PastMinInGame
+      )
+      df_result <- rbind(df_result, df_data)
+      
+      if(row$Team == home.teamName) {
+        homeOnCourt <- homeOnCourt[homeOnCourt != player_out]
+        homeOnCourt <- append(homeOnCourt, player_in)
+        if(length(homeOnCourt) > 5){
+          stop("Home team more than 5 players!")
+        }
+      }else{
+        awayOnCourt <- awayOnCourt[awayOnCourt != player_out]
+        awayOnCourt <- append(awayOnCourt, player_in)
+        if(length(awayOnCourt) > 5){
+          stop("Away team more than 5 players!")
+        }
+      }
+    }else{
+      # Ignore
+    }
+  }
+  
+  lastMin <- 40
+  if(lastPeriod > 4){
+    lastMin <- lastMin + ((lastPeriod - 4) * 5)
+  }
+  
+  # Add last OUT for the players on court
+  for(onCourt in homeOnCourt){
+    df_data <- data.frame(
+      Team = home.teamName,
+      Number = onCourt,
+      Type = "Out",
+      Time = lastMin
+    )
+    df_result <- rbind(df_result, df_data)
+  }
+  
+  for(onCourt in awayOnCourt){
+    df_data <- data.frame(
+      Team = away.teamName,
+      Number = onCourt,
+      Type = "Out",
+      Time = lastMin
+    )
+    df_result <- rbind(df_result, df_data)
+  }
+
+  return(df_result)
+}
+
+df_timeline <- getTimelineData(df_pbyp, df_boxscore)
+df_timeline %<>%
+  arrange(Team, Number, Time) %>%
+  group_by(Team, Number, Type) %>%
+  mutate(RowNum = row_number())
+df_timeline <- merge(df_timeline, df_boxscore, by = c("Team", "Number"))
+
+gp_gannt <- ggplot() +
+  geom_text(data = df_boxscore,
+            aes(x = 0,
+                y = NameShort,
+                label = ""),
+            hjust = 0)
+
+gp_gannt <- gp_gannt +
+  geom_vline(xintercept =  0, linetype="dashed", color = "grey", size=1) +
+  geom_vline(xintercept = 10, linetype="dashed", color = "grey", size=1) +
+  geom_vline(xintercept = 20, linetype="dashed", color = "grey", size=1) +
+  geom_vline(xintercept = 30, linetype="dashed", color = "grey", size=1) +
+  geom_vline(xintercept = 40, linetype="dashed", color = "grey", size=1)
+
+if(max(df_timeline$Time) > 40) {
+  gp_gannt <-
+    gp_gannt +
+    geom_vline(xintercept = 45, linetype="dashed", color = "grey", size=1)
+}
+
+lastIter <- max(df_timeline$RowNum)
+for(iter in 1:lastIter){
+  gp_gannt <- gp_gannt +
+    geom_line(data = subset(df_timeline, RowNum == iter),
+              aes(x = Time,
+                  y = NameShort,
+                  color = Team),
+              size = 7)
+}
+gp_gannt <-
+  gp_gannt +
+  geom_text(data = df_boxscore,
+            aes(x = 0,
+                y = NameShort,
+                label = NameShort),
+            hjust = -0.1,
+            size = 4) +
+  labs(x="",
+       y="",
+       title = plot.title,
+       subtitle = "各選手の出場時間帯") +
+  theme_bw() +
+  theme(
+    axis.text.y = element_blank(),
+    legend.title = element_blank(),
+    legend.position="top",
+    strip.background = element_blank(),
+    strip.text.x = element_blank()
+  ) +
+  facet_wrap(~Team, nrow = 2, scales = "free")
+print(gp_gannt)
+fileName <- paste0("PlayTime_",
+                   target.key,
+                   ".jpg")
+ggsave(fileName, width = 6, height = 9)
