@@ -22,7 +22,7 @@ if (!require(readr)) {
   library(readr)
 }
 
-remDr <- RSelenium::remoteDriver(remoteServerAddr = "bleaguer-selenium1",
+remDr <- RSelenium::remoteDriver(remoteServerAddr = "localhost",
                                  port = 4444L,
                                  browserName = "chrome")
 remDr$open()

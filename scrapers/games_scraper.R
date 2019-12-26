@@ -1,6 +1,6 @@
 Sys.setlocale(locale = 'Japanese')
 
-devtools::install_github("rintaromasuda/bleaguer", force = TRUE)
+#devtools::install_github("rintaromasuda/bleaguer", force = TRUE)
 
 library(bleaguer)
 
@@ -148,8 +148,8 @@ for (league in leagues) {
 ########
 df <- df.result
 
-df$Arena <- gsub("会場：", "", df$Arena)
-df$Attendance <- as.integer(gsub("人", "", gsub("人数：", "", df$Attendance)))
+df$Arena <- gsub("会�?�?�?", "", df$Arena)
+df$Attendance <- as.integer(gsub("人", "", gsub("人数?�?", "", df$Attendance)))
 
 df$Date <- bleaguer::GetFullDateString(df$Date, df$Season)
 

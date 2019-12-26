@@ -17,7 +17,7 @@ if (!require(readr)) {
   library(readr)
 }
 
-remDr <- RSelenium::remoteDriver(remoteServerAddr = "bleaguer-selenium1",
+remDr <- RSelenium::remoteDriver(remoteServerAddr = "localhost",
                                  port = 4444L,
                                  browserName = "chrome")
 remDr$open()
@@ -156,7 +156,7 @@ for (idx in seq(1:nrow(df.games))) {
 df.result.bk <- df.result
 
 df.result$Number <- df.result$`#`
-df.result$StarterBench <- ifelse(df.result$S == "ã€‡", "Starter", "Bench")
+df.result$StarterBench <- ifelse(df.result$S == "ã€?", "Starter", "Bench")
 df.result$Player <- df.result$PLAYER
 df.result$Position <- df.result$PO
 df.result$F3GM <- df.result$`3FGM`
