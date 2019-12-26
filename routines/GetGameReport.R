@@ -1,4 +1,4 @@
-target.key <- 4350
+target.key <- 4365
 home.teamName <- ""
 away.teamName <- ""
 game.date <- ""
@@ -316,8 +316,8 @@ gp1 +
                  color = Team),
              shape = 17,
              size = 3) +
-  xlab("経過時間") +
-  ylab("得点") +
+  xlab("") +
+  ylab("") +
   labs(title = plot.title,
        subtitle = "▲はチームが取得したタイムアウト") +
   theme_bw() +
@@ -488,12 +488,12 @@ df_adv_boxscore <- merge(df_boxscore, df_plusminus, by = c("Team", "Number"))
 ggplot() +
   geom_hline(yintercept = 0, linetype="dashed", color = "grey", size=1) +
   geom_bar(data = df_adv_boxscore,
-           aes(x = reorder(NameShort, PlusMinus),
+           aes(x = reorder(PlayerId, PlusMinus),
                y = PlusMinus,
                fill = Team),
            stat = "identity") +
   geom_text(data = df_adv_boxscore,
-            aes(x = reorder(NameShort, desc(PlusMinus)),
+            aes(x = reorder(PlayerId, desc(PlusMinus)),
                 y = 0,
                 hjust = ifelse(PlusMinus >= 0, -0.1, 1.1),
                 label = paste0(NameShort,
