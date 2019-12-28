@@ -1,4 +1,4 @@
-target.key <- 4365
+target.key <- 4377
 home.teamName <- ""
 away.teamName <- ""
 game.date <- ""
@@ -29,12 +29,12 @@ remDr$open()
 
 scrapePlayByPlayData <- function(){
   df_pbyp <- data.frame()
-  
+
   url.detail <- paste0("https://www.bleague.jp/game_detail/?ScheduleKey=",
                        as.character(target.key),
                        "&TAB=P")
   print(url.detail)
-  
+
   # Access the page until it gets a success
   try.count <- 1
   try.success <- FALSE
@@ -54,7 +54,7 @@ scrapePlayByPlayData <- function(){
       }
     }
   }
-  
+
   if (!try.success) {
     stop(paste0("Error getting data from ", url.detail))
   }
@@ -76,24 +76,24 @@ scrapePlayByPlayData <- function(){
       html_nodes("#game__top__inner > div.result_wrap > div.team_wrap.away > div.team_name > p.for-sp") %>%
       html_text()
   }
-  
+
   home.teamName <<- home
   away.teamName <<- away
-  
+
   date <- html.pbyp %>%
     html_nodes("#game__top__inner > div.date_wrap > p:nth-child(2) > span") %>%
     html_text()
   game.date <<- bleaguer::GetFullDateString(date, b.current.season)
-  
+
   for (period_node in nodes.period) {
     period_num <- as.integer(html_attr(period_node, "data-period"))
-    
+
     nodes.actions <- html_nodes(period_node, "li")
     for (action_node in nodes.actions) {
       data_no <- as.integer(html_attr(action_node, "data-no"))
       action_cd <- html_attr(action_node, "data-action-cd")
       home_away <- html_attr(action_node, "class")
-      
+
       nodes.divs <- html_nodes(action_node, "div")
       player_data <- ""
       clock <- ""
@@ -108,7 +108,7 @@ scrapePlayByPlayData <- function(){
           image_url <- html_attr(div_node, "style")
         }
       }
-      
+
       df.action <- data.frame(
         ScheduleKey = target.key,
         HomeAway = home_away,
@@ -119,11 +119,11 @@ scrapePlayByPlayData <- function(){
         PlayerData = player_data,
         ImageUrl = image_url
       )
-      
+
       df_pbyp <- rbind(df_pbyp, df.action)
     }
   }
-  
+
   return(df_pbyp)
 }
 
@@ -138,7 +138,7 @@ processPlayByPlayData <- function(df){
                                   (((df$Period - 1) * 10) + df$PastMinInPeriod),
                                   (40 + ((df$Period - 5) * 5) + df$PastMinInPeriod))
   df$PastMinInGameClass <- ceiling(df$PastMinInGame)
-  
+
   df %<>%
     arrange(Period, DataNo) %>%
     mutate(PtsAdded = ifelse(ActionCd == "1", 3,
@@ -146,14 +146,14 @@ processPlayByPlayData <- function(df){
                                     ifelse(ActionCd == "7", 1, 0)))) %>%
     mutate(HomePtsAdded = ifelse(grepl("home", HomeAway, ignore.case = TRUE), PtsAdded, 0),
            AwayPtsAdded = ifelse(grepl("away", HomeAway, ignore.case = TRUE), PtsAdded, 0))
-  
+
   df %<>%
     arrange(Period, DataNo) %>%
     mutate(HomeAccPts = cumsum(HomePtsAdded),
            AwayAccPts = cumsum(AwayPtsAdded))
-  
+
   df$PtsDiff = df$HomeAccPts - df$AwayAccPts
-  
+
   df$Team <- ifelse(grepl("home", df$HomeAway, ignore.case = TRUE), home.teamName, away.teamName)
   return(df)
 }
@@ -244,9 +244,7 @@ df_stats$Y <- ifelse(df_stats$Team != home.teamName, df_stats$Y - 17, df_stats$Y
 ####################
 home.longName <- subset(b.teams, Season == b.current.season & NameShort == home.teamName)[c("NameLong")][[1]]
 away.longName <- subset(b.teams, Season == b.current.season & NameShort == away.teamName)[c("NameLong")][[1]]
-plot.title <- paste0(b.current.season,
-                     "ƒV[ƒYƒ“ ",
-                     home.longName,
+plot.title <- paste0(home.longName,
                      " vs ",
                      away.longName,
                      " (",
@@ -291,7 +289,7 @@ gp1 +
                                "/",
                                as.character(FTA)),
                 color = Team),
-            size = 4) +  
+            size = 4) +
   geom_line(data = df_point,
             aes(x = Min,
                 y = Pts,
@@ -306,7 +304,7 @@ gp1 +
   geom_label(data = subset(df_point, Min %in% c(10, 20, 30, 40, 45, 50, 55, 60, 65)),
                    show.legend = FALSE,
                    aes(x = Min,
-                       y = Pts + (Direction * 5), 
+                       y = Pts + (Direction * 5),
                        label = as.character(Pts),
                        color = Team),
                    size = 5) +
@@ -319,7 +317,7 @@ gp1 +
   xlab("") +
   ylab("") +
   labs(title = plot.title,
-       subtitle = "£‚Íƒ`[ƒ€‚ªŽæ“¾‚µ‚½ƒ^ƒCƒ€ƒAƒEƒg") +
+       subtitle = "â–²ã¯å„ãƒãƒ¼ãƒ ãŒå–å¾—ã—ãŸã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆ") +
   theme_bw() +
   theme(
     legend.position="top",
@@ -337,12 +335,12 @@ ggsave(fileName, width = 6, height = 9)
 ##############
 scrapeBoxScoreData <- function(){
   df_boxscore <- data.frame()
-  
+
   url.detail <- paste0("https://www.bleague.jp/game_detail/?ScheduleKey=",
                        as.character(target.key),
                        "&TAB=B")
   print(url.detail)
-  
+
   try.count <- 1
   try.success <- FALSE
   try.threshold <- 60
@@ -364,14 +362,14 @@ scrapeBoxScoreData <- function(){
       try.count <- try.count + 1
     }
   }
-  
+
   if (!try.success) {
     stop(paste0("Error getting data from ", url.detail))
-  }  
-  
+  }
+
   tables.boxscore <- html.boxscore %>%
     html_nodes(xpath = "//ul[@class=\"boxscore_contents\"]/li[@data-period=\"0\"]//tbody")
-  
+
   for(tbl in tables.boxscore){
     homeAway <- html_attr(tbl, "class")
     team <- ifelse(grepl("home", homeAway, ignore.case = TRUE), home.teamName, away.teamName)
@@ -382,7 +380,7 @@ scrapeBoxScoreData <- function(){
       starterBench <- html_text(cols[2])
       name <- html_text(html_node(cols[3], "a > span.for-pc"))
       nameShort <- html_text(html_node(cols[3], "a > span.for-sp"))
-      
+
       df_player <- data.frame(
         Team = team,
         PlayerId = playerId,
@@ -391,11 +389,11 @@ scrapeBoxScoreData <- function(){
         Name = name,
         NameShort = nameShort
       )
-      
+
       df_boxscore <- rbind(df_boxscore, df_player)
     }
   }
-  
+
   return(df_boxscore)
 }
 
@@ -407,18 +405,18 @@ df_boxscore$Team <- factor(df_boxscore$Team, levels = c(home.teamName, away.team
 #############
 calculatePlusMinus <- function(df_pbyp, df_boxscore){
   df <- df_pbyp %>% arrange(DataNo) %>% as.data.frame()
-  
+
   homeTeam <- rep(0, nrow(subset(df_boxscore, Team == home.teamName)))
   names(homeTeam) <- df_boxscore[df_boxscore$Team == home.teamName,][["Number"]]
   awayTeam <- rep(0, nrow(subset(df_boxscore, Team == away.teamName)))
   names(awayTeam) <- df_boxscore[df_boxscore$Team == away.teamName,][["Number"]]
-  
+
   homeOnCourt <- list()
   awayOnCourt <- list()
-  
+
   for(rowNum in 1:nrow(df)){
     row <- df[rowNum,]
-    
+
     if(row$ActionCd == "86"){
       player_in <- str_extract(row$PlayerData, "#[0-9]+")
       if(grepl("home", row$HomeAway, ignore.case = TRUE)) {
@@ -436,7 +434,7 @@ calculatePlusMinus <- function(df_pbyp, df_boxscore){
       splitted <- str_split(row$PlayerData, " ")[[1]]
       player_out <- str_extract(splitted[1], "#[0-9]+")
       player_in <- str_extract(splitted[4], "#[0-9]+")
-      
+
       if(grepl("home", row$HomeAway, ignore.case = TRUE)) {
         homeOnCourt <- homeOnCourt[homeOnCourt != player_out]
         homeOnCourt <- append(homeOnCourt, player_in)
@@ -470,7 +468,7 @@ calculatePlusMinus <- function(df_pbyp, df_boxscore){
       }
     }
   }
-  
+
   df_result <- data.frame(
     Team = append(rep(home.teamName, length(homeTeam)), rep(away.teamName, length(awayTeam))),
     Number = append(names(homeTeam), names(awayTeam)),
@@ -505,7 +503,7 @@ ggplot() +
   labs(x = "",
        y = "",
        title = plot.title,
-       subtitle = "Še‘IŽè‚ÌoêŽžŠÔ‘Ñ‚Å‚Ì“¾Ž¸“_·i{|j") +
+       subtitle = "ï¼ˆï¼‰å†…ã¯å„é¸æ‰‹ã®å‡ºå ´æ™‚é–“å¸¯ã§ã®å¾—å¤±ç‚¹å·®") +
   coord_flip() +
   theme_bw() +
   theme(
@@ -524,18 +522,18 @@ ggsave(fileName, width = 6, height = 9)
 ###############
 getTimelineData <- function(df_pbyp, df_boxscore){
   df <- df_pbyp %>% arrange(DataNo) %>% as.data.frame()
-  
+
   df_result <- data.frame()
 
   homeOnCourt <- list()
-  awayOnCourt <- list()  
+  awayOnCourt <- list()
   lastPeriod <- 1
-  
+
   for(rowNum in 1:nrow(df)){
     row <- df[rowNum,]
-    
+
     lastPeriod <- row$Period
-    
+
     if(row$ActionCd == "86"){
       player_in <- str_extract(row$PlayerData, "#[0-9]+")
       df_data <- data.frame(
@@ -545,7 +543,7 @@ getTimelineData <- function(df_pbyp, df_boxscore){
         Time = row$PastMinInGame
       )
       df_result <- rbind(df_result, df_data)
-      
+
       if(row$Team == home.teamName) {
         homeOnCourt <- append(homeOnCourt, player_in)
         if(length(homeOnCourt) > 5){
@@ -577,7 +575,7 @@ getTimelineData <- function(df_pbyp, df_boxscore){
         Time = row$PastMinInGame
       )
       df_result <- rbind(df_result, df_data)
-      
+
       if(row$Team == home.teamName) {
         homeOnCourt <- homeOnCourt[homeOnCourt != player_out]
         homeOnCourt <- append(homeOnCourt, player_in)
@@ -595,12 +593,12 @@ getTimelineData <- function(df_pbyp, df_boxscore){
       # Ignore
     }
   }
-  
+
   lastMin <- 40
   if(lastPeriod > 4){
     lastMin <- lastMin + ((lastPeriod - 4) * 5)
   }
-  
+
   # Add last OUT for the players on court
   for(onCourt in homeOnCourt){
     df_data <- data.frame(
@@ -611,7 +609,7 @@ getTimelineData <- function(df_pbyp, df_boxscore){
     )
     df_result <- rbind(df_result, df_data)
   }
-  
+
   for(onCourt in awayOnCourt){
     df_data <- data.frame(
       Team = away.teamName,
@@ -672,7 +670,7 @@ gp_gannt <-
   labs(x="",
        y="",
        title = plot.title,
-       subtitle = "Še‘IŽè‚ÌoêŽžŠÔ‘Ñ") +
+       subtitle = "å„é¸æ‰‹ã®å‡ºå ´æ™‚é–“å¸¯") +
   theme_bw() +
   theme(
     axis.text.y = element_blank(),
