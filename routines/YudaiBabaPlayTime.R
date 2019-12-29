@@ -63,9 +63,9 @@ for (gameId in df.games$Game_ID) {
   print(url)
   httpResponse = GET(url, add_headers(Referer = "http://stats.nba.com"), accept_json())
   res <- content(httpResponse)
-  
+
   colNames <- res$resultSets[[1]]$headers
-  
+
   for (i in 1:length(res$resultSets[[1]]$rowSet)) {
     print(i)
     arrayRow <- as.character(res$resultSets[[1]]$rowSet[[i]])
@@ -87,7 +87,7 @@ ConvertMinStrToDec <- function(min_str) {
     min <- min + as.numeric(item[2]) / 60
     round(min, 2)
   }
-  
+
   ls <- sapply(stringr::str_split(min_str, ":"), Convert)
   return(ls)
 }
@@ -130,3 +130,34 @@ ggplot() +
   )
 
 ggsave("YudaiBaba_Legends.jpg", width = 6, height = 9)
+
+ggplot() +
+  geom_bar(data = subset(df.output, PLAYER_ID == 1629819),
+           aes(x = Game_Index,
+               y = as.integer(PTS)),
+           fill = "blue",
+           stat = "identity") +
+  geom_line(data = subset(df.output, PLAYER_ID == 1629819),
+           aes(x = Game_Index,
+               y = MIN_NUM),
+           size = 1,
+           color = "red") +
+  geom_point(data = subset(df.output, PLAYER_ID == 1629819),
+            aes(x = Game_Index,
+                y = MIN_NUM),
+            size = 3,
+            color = "red") +
+  scale_y_continuous(sec.axis = sec_axis(~., name = "Minutes Played")) +
+  labs(y = "Points Made",
+       x = "Nth Game of Texas Legends",
+       title = "Yudai Baba in 2019-20 Season at NBA G League",
+       subtitle = "Points Made and Minutes Played") +
+  theme_bw() +
+  theme(
+    axis.text.y.left = element_text(color = "blue"),
+    axis.title.y.left = element_text(color = "blue"),
+    axis.text.y.right = element_text(color = "red"),
+    axis.title.y.right = element_text(color = "red")
+  )
+
+ggsave("YudaiBaba_PtsAndMin.jpg", width = 6, height = 6)
