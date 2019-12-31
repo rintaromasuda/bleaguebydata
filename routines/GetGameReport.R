@@ -1,10 +1,11 @@
-target.key <- 4377
+target.key <- 4384
 home.teamName <- ""
 away.teamName <- ""
 game.date <- ""
 y.adjust <- 5
 
 Sys.setlocale(locale = 'Japanese')
+setwd("~")
 
 library(bleaguer)
 library(dplyr)
