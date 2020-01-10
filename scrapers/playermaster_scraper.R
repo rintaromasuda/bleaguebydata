@@ -87,7 +87,13 @@ for(row in 1:nrow(df_teams)) {
   }
 }
 
-write.csv(df_result, file = "player_master.csv")
+df_result$BirthYear <- as.numeric(format(df_result$Birthday,'%Y'))
 
-
-
+df_target <- subset(df_result, BirthYear %in% c(1996, 1984))
+for(row in 1:nrow(df_target)) {
+  team <- df_target[["Team"]][row]
+  name <- df_target[["Name"]][row]
+  bday <- df_target[["Birthday_Raw"]][row]
+  line <- paste0(team, " ", name, "（", bday, "）")
+  print(line)
+}
