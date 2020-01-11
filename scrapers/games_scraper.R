@@ -19,6 +19,16 @@ if (!require(rvest)) {
   library(rvest)
 }
 
+if (!require(RSelenium)) {
+  install.packages("RSelenium")
+  library(RSelenium)
+}
+
+remDr <- RSelenium::remoteDriver(remoteServerAddr = "localhost",
+                                 port = 4444L,
+                                 browserName = "chrome")
+remDr$open()
+
 df.result <- data.frame()
 
 season <- "2019-20"
@@ -59,8 +69,10 @@ for (league in leagues) {
                   as.character(team.Id),
                    sep = "")
       print(url.team)
-      html.team <- read_html(url.team, encoding = "utf-8")
+      remDr$navigate(url.team)
       Sys.sleep(0.5)
+      pageSource <- remDr$getPageSource()
+      html.team <- read_html(pageSource[[1]], encoding = "utf-8")
       urls.game <- html.team %>%
         html_nodes("#round_list > dd > ul > li > div.gamedata_left > div.data_link > div.state_link.btn.report > a") %>%
         html_attr("href")
@@ -74,7 +86,10 @@ for (league in leagues) {
         # Duplicate check
         if (!(key %in% scheduleKeys)) {
           scheduleKeys <- append(scheduleKeys, key)
-          html.game <- read_html(url.game, encoding = "utf-8")
+          remDr$navigate(url.game)
+          Sys.sleep(1)
+          pageSource2 <- remDr$getPageSource()
+          html.game <- read_html(pageSource2[[1]], encoding = "utf-8")
 
           ########
           # Parsing all the necessary information
