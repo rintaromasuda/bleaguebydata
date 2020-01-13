@@ -23,6 +23,8 @@ if(!require(jsonlite)) {
   library(jsonlite)
 }
 
+Sys.setlocale(locale = "English")
+
 teamId <- 1612709918
 
 # Get game log (a.k.a. schedule) to get Game IDs
@@ -46,10 +48,12 @@ for (i in 1:numGames) {
   df.games <- rbind(df.games, df)
 }
 
+df.games$GameDate <- as.Date(df.games$GAME_DATE,format="%b %d,%Y")
+
 # Add game index
 df.games$Game_ID <- as.character(df.games$Game_ID)
 df.games <- df.games %>%
-  arrange(Game_ID) %>%
+  arrange(GameDate) %>%
   mutate(Game_Index = row_number())
 
 # Access each game
@@ -161,3 +165,4 @@ ggplot() +
   )
 
 ggsave("YudaiBaba_PtsAndMin.jpg", width = 6, height = 6)
+
