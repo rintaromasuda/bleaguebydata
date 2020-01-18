@@ -1,4 +1,4 @@
-target.key <- 4394
+target.key <- 5633
 home.teamName <- ""
 away.teamName <- ""
 game.date <- ""
@@ -631,12 +631,12 @@ df_timeline %<>%
   mutate(RowNum = row_number())
 df_timeline <- merge(df_timeline, df_boxscore, by = c("Team", "Number"))
 
-gp_gannt <- ggplot() +
-  geom_text(data = df_boxscore,
-            aes(x = 0,
-                y = NameShort,
-                label = ""),
-            hjust = 0)
+gp_gannt <- ggplot() #+
+#  geom_text(data = df_boxscore,
+#            aes(x = 0,
+#                y = PlayerId,
+#                label = ""),
+#            hjust = 0)
 
 gp_gannt <- gp_gannt +
   geom_vline(xintercept =  0, linetype="dashed", color = "grey", size=1) +
@@ -656,7 +656,7 @@ for(iter in 1:lastIter){
   gp_gannt <- gp_gannt +
     geom_line(data = subset(df_timeline, RowNum == iter),
               aes(x = Time,
-                  y = NameShort,
+                  y = PlayerId,
                   color = Team),
               size = 7)
 }
@@ -664,7 +664,7 @@ gp_gannt <-
   gp_gannt +
   geom_text(data = df_boxscore,
             aes(x = 0,
-                y = NameShort,
+                y = PlayerId,
                 label = NameShort),
             hjust = -0.1,
             size = 4) +
