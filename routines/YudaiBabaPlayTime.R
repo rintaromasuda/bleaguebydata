@@ -27,13 +27,19 @@ Sys.setlocale(locale = "English")
 
 teamId <- 1612709918
 
+requiredHeaders <- add_headers("Referer" = "http://stats.nba.com",
+                               "User-Agent" = "RScript/1.0",
+                               "x-nba-stats-origin" = "stats",
+                               "x-nba-stats-token" = "true"
+                               )
+
 # Get game log (a.k.a. schedule) to get Game IDs
 url <- paste0("https://stats.nba.com/stats/teamgamelog",
               "?DateFrom=&DateTo=&LeagueID=20&Season=2019-20&SeasonType=Regular+Season",
               "&TeamID=",
               as.character(teamId))
 
-httpResponse = GET(url, add_headers(Referer = "http://stats.nba.com"), accept_json())
+httpResponse = GET(url, requiredHeaders, accept_json())
 res <- content(httpResponse)
 
 colNames <- res$resultSets[[1]]$headers
@@ -65,7 +71,7 @@ for (gameId in df.games$Game_ID) {
                 gameId,
                 "&RangeType=0&StartPeriod=1&StartRange=0")
   print(url)
-  httpResponse = GET(url, add_headers(Referer = "http://stats.nba.com"), accept_json())
+  httpResponse = GET(url, requiredHeaders, accept_json())
   res <- content(httpResponse)
 
   colNames <- res$resultSets[[1]]$headers
@@ -101,6 +107,7 @@ df.output[is.na(df.output$MIN_NUM),]$MIN_NUM <- 0
 df.output$MIN_CLASS <- cut(df.output$MIN_NUM,
                            c(-Inf, 0, 5, 10, 20, 30, 40, Inf),
                            labels = c("0", "<=5", "<=10", "<=20", "<=30", "<=40", ">40"))
+df.output$STARTER <- ifelse(df.output$START_POSITION == "", FALSE, TRUE)
 
 ggplot() +
   geom_tile(data = df.output,
