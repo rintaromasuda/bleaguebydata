@@ -82,7 +82,7 @@ plotOppPaintPts <- function(df, league = "B1"){
 plotOppPaintPts(df)
 ggsave("OppPaintPts_B1.jpg", width = 6, height = 9)
 plotOppPaintPts(df, "B2")
-ggsave("OppPaintPts.jpg", width = 6, height = 9)
+ggsave("OppPaintPts_B2.jpg", width = 6, height = 9)
 
 ###
 # Opp.EFG
