@@ -1,5 +1,10 @@
 gameId <- "0021900744"
 
+if(!require(dplyr)) {
+  install.packages("dplyr")
+  library(dplyr)
+}
+
 if(!require(httr)) {
   install.packages("httr")
   library(httr)
@@ -58,6 +63,7 @@ boxscoreUrl <- paste0("https://stats.nba.com/stats/boxscoretraditionalv2",
                       "&RangeType=0",
                       "&GameID=", gameId)
 boxData <- GetDataViaApi(boxscoreUrl)
+boxData$START_POSITION <- factor(boxData$START_POSITION, level = c("G", "F", "C"))
 
 #########################
 # Get Play-by-Play data #
@@ -67,3 +73,26 @@ playByPlayUrl <- paste0("https://stats.nba.com/stats/playbyplayv2",
                         "&EndPeriod=0",
                         "&GameID=", gameId)
 playData <- GetDataViaApi(playByPlayUrl)
+playData$PERIOD <- as.integer(playData$PERIOD)
+playData$EVENTNUM <- as.integer(playData$EVENTNUM)
+
+# Pre-proces Play-by-Play data
+playData %<>%
+  dplyr::arrange(EVENTNUM) %>%
+  as.data.frame()
+
+playData$PCTIMEDECIMAL <- ConvertMinStrToDec(playData$PCTIMESTRING)
+playData$PERIOD_TIME_PAST <- ifelse(playData$PERIOD <= 4,
+                                    12 - playData$PCTIMEDECIMAL,
+                                    5 - playData$PCTIMEDECIMAL)
+playData$GAME_TIME_PAST <- ifelse(playData$PERIOD <= 4,
+                                  playData$PERIOD_TIME_PAST + ((playData$PERIOD - 1) * 12),
+                                  playData$PERIOD_TIME_PAST + 48 + ((playData$PERIOD - 5) * 5))
+lastPeriod <- max(playData$PERIOD)
+
+###############################
+# Create data for gantt chart #
+###############################
+ganntData <- boxData[!is.na(boxData$START_POSITION), c("TEAM_ID", "PLAYER_ID")]
+ganntData$DATA_TYPE <- "In"
+ganntData$GAME_TIME_PAST <- 0
