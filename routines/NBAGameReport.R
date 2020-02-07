@@ -19,12 +19,12 @@ Sys.setlocale(locale = "English")
 
 GetDataViaApi <- function(url){
   result <- data.frame()
-  
+
   requiredHeaders <- httr::add_headers("Referer" = "http://stats.nba.com",
                                        "User-Agent" = "RScript/1.0",
                                        "x-nba-stats-origin" = "stats",
                                        "x-nba-stats-token" = "true")
-  
+
   httpResponse = GET(url, requiredHeaders, accept_json())
   res <- content(httpResponse)
   colNames <- res$resultSets[[1]]$headers
@@ -37,7 +37,7 @@ GetDataViaApi <- function(url){
     colnames(row) <- colNames
     result <- rbind(result, row)
   }
-  
+
   return(result)
 }
 
@@ -47,24 +47,48 @@ ConvertMinStrToDec <- function(min_str) {
     min <- min + as.numeric(item[2]) / 60
     round(min, 2)
   }
-  
+
   ls <- sapply(stringr::str_split(min_str, ":"), Convert)
   return(ls)
 }
 
-GetBoxScoreData <- function(targetPeriod){
+GetStarterData <- function(targetPeriod){
+  # Since there is no perfect way to get start players of each period, we are making some heuristics here.
+  # Getting first 30 sec boxscore of each period, we consider 5 players having largets MIN are the starters.
+  result <- data.frame()
+
+  if(targetPeriod <= 4){
+    startRange <- (targetPeriod - 1) * 12 * 60 * 10
+  }else{
+    startRange <- (48 + ((targetPeriod - 5) * 5)) * 10
+  }
+  endRange <- startRange + 300 # 30 seconds
+
+
   boxscoreUrl <- paste0("https://stats.nba.com/stats/boxscoretraditionalv2",
-                        "?StartPeriod=",
-                        as.character(targetPeriod),
-                        "&StartRange=1",
-                        "&EndPeriod=",
-                        as.character(targetPeriod),
-                        "&EndRange=1",
-                        "&RangeType=1",
+                        "?StartPeriod=0",
+                        "&EndPeriod=0",
+                        "&StartRange=",
+                        as.character(startRange),
+                        "&EndRange=0",
+                        as.character(endRange),
+                        "&RangeType=2",
                         "&GameID=", gameId)
   boxData <- GetDataViaApi(boxscoreUrl)
   boxData$START_POSITION <- factor(boxData$START_POSITION, level = c("G", "F", "C"))
-  return(boxData)
+  boxData$MINDECIMAL <- ConvertMinStrToDec(boxData$MIN)
+
+  if(targetPeriod == 1){
+    # In case of first period, START_POSITION works for identifying starters
+    result <- boxData[!is.na(boxData$START_POSITION),]
+  }else if(targetPeriod > 1){
+    result <- boxData %>%
+      dplyr::group_by(TEAM_ID) %>%
+      dplyr::top_n(n = 5, wt = MINDECIMAL) %>%
+      as.data.frame()
+  }
+
+  return(result[, c("TEAM_ID", "PLAYER_ID")])
 }
 
 #########################
@@ -103,7 +127,7 @@ for(targetPeriod in 1:lastPeriod){
   periodGanntData <- boxData[!is.na(boxData$START_POSITION), c("TEAM_ID", "PLAYER_ID")]
   periodGanntData$DATA_TYPE <- "In"
   periodGanntData$GAME_TIME_PAST <- 0
-  
+
   # Get all substitions of the period
   periodPlayData <- subset(playData, PERIOD == targetPeriod)
   for(i in 1:nrow(periodPlayData)) {
@@ -125,7 +149,7 @@ for(targetPeriod in 1:lastPeriod){
                            GAME_TIME_PAST = row$GAME_TIME_PAST))
     }
   }
-  
+
   # Get all five players on the court at the end of the period
   onCourtData <- periodGanntData %>%
     mutate(COUNTER = 1) %>%
@@ -133,7 +157,7 @@ for(targetPeriod in 1:lastPeriod){
     summarise(InCount = sum(COUNTER[DATA_TYPE == "In"]),
               OutCount = sum(COUNTER[DATA_TYPE == "Out"])) %>%
     as.data.frame()
-  
+
   if(nrow(subset(onCourtData, OutCount > InCount)) > 0){
     print(onCourtData)
     stop("Invalid substition data. Out > In.")
@@ -141,7 +165,7 @@ for(targetPeriod in 1:lastPeriod){
     print(onCourtData)
     stop("Invalid substition data. In - Out > 1.")
   }
-  
+
   onCourtData <- onCourtData[onCourtData$InCount > onCourtData$OutCount, c("TEAM_ID", "PLAYER_ID")]
   periodGanntData <- rbind(periodGanntData,
                       data.frame(
@@ -149,7 +173,7 @@ for(targetPeriod in 1:lastPeriod){
                         PLAYER_ID = onCourtData$PLAYER_ID,
                         DATA_TYPE = "Out",
                         GAME_TIME_PAST = row$GAME_TIME_PAST))
-  
+
   # Add the period data to the total
   ganntData <- rbind(ganntData, periodGanntData)
   break
