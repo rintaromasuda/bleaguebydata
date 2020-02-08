@@ -17,6 +17,9 @@ if(!require(jsonlite)) {
 
 Sys.setlocale(locale = "English")
 
+#############
+# Functions #
+#############
 GetDataViaApi <- function(url){
   result <- data.frame()
 
@@ -91,6 +94,10 @@ GetStarterData <- function(targetPeriod){
   return(result[, c("TEAM_ID", "PLAYER_ID")])
 }
 
+########
+# Main #
+########
+
 #########################
 # Get Play-by-Play data #
 #########################
@@ -122,14 +129,18 @@ lastPeriod <- max(playData$PERIOD)
 ganntData <- data.frame()
 for(targetPeriod in 1:lastPeriod){
   print(paste0("Target Period -> ", targetPeriod))
-  # Get starters of the period
-  boxData <- GetBoxScoreData(targetPeriod)
-  periodGanntData <- boxData[!is.na(boxData$START_POSITION), c("TEAM_ID", "PLAYER_ID")]
-  periodGanntData$DATA_TYPE <- "In"
-  periodGanntData$GAME_TIME_PAST <- 0
 
-  # Get all substitions of the period
   periodPlayData <- subset(playData, PERIOD == targetPeriod)
+  firstGameTime <- dplyr::first(periodPlayData$GAME_TIME_PAST)
+  lastGameTime <- dplyr::last(periodPlayData$GAME_TIME_PAST)
+  # Get starters of the period
+  starterData <- GetStarterData(targetPeriod)
+  print(head(starterData, 10))
+  periodGanntData <- starterData
+  periodGanntData$DATA_TYPE <- "In"
+  periodGanntData$GAME_TIME_PAST <- firstGameTime
+  
+  # Get all substitions of the period
   for(i in 1:nrow(periodPlayData)) {
     row <- periodPlayData[i, ]
     if(row$EVENTMSGTYPE == "8"){
@@ -172,16 +183,15 @@ for(targetPeriod in 1:lastPeriod){
                         TEAM_ID = onCourtData$TEAM_ID,
                         PLAYER_ID = onCourtData$PLAYER_ID,
                         DATA_TYPE = "Out",
-                        GAME_TIME_PAST = row$GAME_TIME_PAST))
+                        GAME_TIME_PAST = lastGameTime))
 
   # Add the period data to the total
   ganntData <- rbind(ganntData, periodGanntData)
-  break
 }
 
-onCourtData <- ganntData %>%
+ganntData %>%
   mutate(COUNTER = 1) %>%
   group_by(TEAM_ID, PLAYER_ID) %>%
   summarise(InCount = sum(COUNTER[DATA_TYPE == "In"]),
             OutCount = sum(COUNTER[DATA_TYPE == "Out"])) %>%
-  View()
+  print()
