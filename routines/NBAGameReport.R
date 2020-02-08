@@ -5,6 +5,11 @@ if(!require(dplyr)) {
   library(dplyr)
 }
 
+if(!require(ggplot2)) {
+  install.packages("ggplot2")
+  library(ggplot2)
+}
+
 if(!require(httr)) {
   install.packages("httr")
   library(httr)
@@ -97,10 +102,7 @@ GetStarterData <- function(targetPeriod){
 ########
 # Main #
 ########
-
-#########################
-# Get Play-by-Play data #
-#########################
+# Get Play-by-Play data
 playByPlayUrl <- paste0("https://stats.nba.com/stats/playbyplayv2",
                         "?StartPeriod=0",
                         "&EndPeriod=0",
@@ -121,13 +123,10 @@ playData$PERIOD_TIME_PAST <- ifelse(playData$PERIOD <= 4,
 playData$GAME_TIME_PAST <- ifelse(playData$PERIOD <= 4,
                                   playData$PERIOD_TIME_PAST + ((playData$PERIOD - 1) * 12),
                                   playData$PERIOD_TIME_PAST + 48 + ((playData$PERIOD - 5) * 5))
-lastPeriod <- max(playData$PERIOD)
 
-###############################
-# Create data for gantt chart #
-###############################
+# Create data for gantt chart period by period
 ganntData <- data.frame()
-for(targetPeriod in 1:lastPeriod){
+for(targetPeriod in 1:max(playData$PERIOD)){
   print(paste0("Target Period -> ", targetPeriod))
 
   periodPlayData <- subset(playData, PERIOD == targetPeriod)
@@ -189,9 +188,22 @@ for(targetPeriod in 1:lastPeriod){
   ganntData <- rbind(ganntData, periodGanntData)
 }
 
-ganntData %>%
-  mutate(COUNTER = 1) %>%
-  group_by(TEAM_ID, PLAYER_ID) %>%
-  summarise(InCount = sum(COUNTER[DATA_TYPE == "In"]),
-            OutCount = sum(COUNTER[DATA_TYPE == "Out"])) %>%
-  print()
+# Pre-process gannt chart data
+ganntData %<>%
+  dplyr::arrange(TEAM_ID, PLAYER_ID, GAME_TIME_PAST) %>%
+  dplyr::group_by(TEAM_ID, PLAYER_ID, DATA_TYPE) %>%
+  dplyr::mutate(ITERATION = row_number())
+
+ganntChart <- ggplot2::ggplot()
+lastIter <- max(ganntData$ITERATION)
+for(iter in 1:lastIter){
+  ganntChart <- ganntChart +
+    ggplot2::geom_line(data = subset(ganntData, ITERATION == iter),
+                       ggplot2::aes(x = GAME_TIME_PAST,
+                                    y = PLAYER_ID,
+                                   color = TEAM_ID),
+                       size = 7)
+}
+ganntChart <- ganntChart +
+  facet_wrap(~TEAM_ID, nrow = 2, scales = "free")
+print(ganntChart)
