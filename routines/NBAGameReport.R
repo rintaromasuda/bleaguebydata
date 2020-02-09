@@ -6,6 +6,11 @@ if(!require(dplyr)) {
   library(dplyr)
 }
 
+if(!require(tidyr)) {
+  install.packages("tidyr")
+  library(tidyr)
+}
+
 if(!require(ggplot2)) {
   install.packages("ggplot2")
   library(ggplot2)
@@ -136,13 +141,20 @@ playData %<>%
   dplyr::arrange(EVENTNUM) %>%
   as.data.frame()
 
-playData$PCTIMEDECIMAL <- ConvertMinStrToDec(playData$PCTIMESTRING)
+playData$PCTIME_DECIMAL <- ConvertMinStrToDec(playData$PCTIMESTRING)
 playData$PERIOD_TIME_PAST <- ifelse(playData$PERIOD <= 4,
-                                    12 - playData$PCTIMEDECIMAL,
-                                    5 - playData$PCTIMEDECIMAL)
+                                    12 - playData$PCTIME_DECIMAL,
+                                    5 - playData$PCTIME_DECIMAL)
 playData$GAME_TIME_PAST <- ifelse(playData$PERIOD <= 4,
                                   playData$PERIOD_TIME_PAST + ((playData$PERIOD - 1) * 12),
                                   playData$PERIOD_TIME_PAST + 48 + ((playData$PERIOD - 5) * 5))
+playData$SCOREMARGIN_DECIMAL <- ifelse(playData$SCOREMARGIN == "NULL", NA,
+                                      ifelse(playData$SCOREMARGIN == "TIE", 0,
+                                             as.integer(playData$SCOREMARGIN)))
+playData[1,]$SCOREMARGIN_DECIMAL <- 0
+playData %<>%
+  tidyr::fill(SCOREMARGIN_DECIMAL) %>%
+  as.data.frame()
 
 # Create data for gantt chart period by period
 ganntData <- data.frame()
@@ -152,12 +164,15 @@ for(targetPeriod in 1:max(playData$PERIOD)){
   periodPlayData <- subset(playData, PERIOD == targetPeriod)
   firstGameTime <- dplyr::first(periodPlayData$GAME_TIME_PAST)
   lastGameTime <- dplyr::last(periodPlayData$GAME_TIME_PAST)
+  firstScoreMargin <- dplyr::first(periodPlayData$SCOREMARGIN_DECIMAL)
+  lastScoreMargin <- dplyr::last(periodPlayData$SCOREMARGIN_DECIMAL)
   # Get starters of the period
   starterData <- GetStarterData(targetPeriod)
   print(head(starterData, 10))
   periodGanntData <- starterData
   periodGanntData$DATA_TYPE <- "In"
   periodGanntData$GAME_TIME_PAST <- firstGameTime
+  periodGanntData$SCOREMARGIN <- firstScoreMargin
   
   # Get all substitions of the period
   for(i in 1:nrow(periodPlayData)) {
@@ -169,14 +184,16 @@ for(targetPeriod in 1:max(playData$PERIOD)){
                            TEAM_ID = row$PLAYER1_TEAM_ID,
                            PLAYER_ID = row$PLAYER1_ID,
                            DATA_TYPE = "Out",
-                           GAME_TIME_PAST = row$GAME_TIME_PAST))
+                           GAME_TIME_PAST = row$GAME_TIME_PAST,
+                           SCOREMARGIN = row$SCOREMARGIN_DECIMAL))
       # Player in
       periodGanntData <- rbind(periodGanntData,
                          data.frame(
                            TEAM_ID = row$PLAYER2_TEAM_ID,
                            PLAYER_ID = row$PLAYER2_ID,
                            DATA_TYPE = "In",
-                           GAME_TIME_PAST = row$GAME_TIME_PAST))
+                           GAME_TIME_PAST = row$GAME_TIME_PAST,
+                           SCOREMARGIN = row$SCOREMARGIN_DECIMAL))
     }
   }
 
@@ -202,7 +219,8 @@ for(targetPeriod in 1:max(playData$PERIOD)){
                         TEAM_ID = onCourtData$TEAM_ID,
                         PLAYER_ID = onCourtData$PLAYER_ID,
                         DATA_TYPE = "Out",
-                        GAME_TIME_PAST = lastGameTime))
+                        GAME_TIME_PAST = lastGameTime,
+                        SCOREMARGIN = lastScoreMargin))
 
   # Add the period data to the total
   ganntData <- rbind(ganntData, periodGanntData)
@@ -213,6 +231,13 @@ ganntData %<>%
   dplyr::arrange(TEAM_ID, PLAYER_ID, GAME_TIME_PAST) %>%
   dplyr::group_by(TEAM_ID, PLAYER_ID, DATA_TYPE) %>%
   dplyr::mutate(ITERATION = row_number())
+
+# Get per-duration stats
+inData <- subset(ganntData, DATA_TYPE == "In")
+outData <- subset(ganntData, DATA_TYPE == "Out")
+durationData <- merge(inData, outData, by = c("TEAM_ID", "PLAYER_ID", "ITERATION"))
+durationData$X <- durationData$GAME_TIME_PAST.x + (durationData$GAME_TIME_PAST.y - durationData$GAME_TIME_PAST.x) / 2
+durationData$NET <- durationData$SCOREMARGIN.y - durationData$SCOREMARGIN.x
 
 # Get total boxscore
 boxData <- GetBoxscore()
@@ -240,7 +265,13 @@ foo <- function(){
                            y = reorder(PLAYER_ID, MINDECIMAL),
                            label = PLAYER_NAME),
               hjust = 0)
-  
+
+  ganntChart <- ganntChart +
+    geom_text(data = durationData,
+              ggplot2::aes(x = X,
+                           y = PLAYER_ID,
+                           label = NET))  
+    
   ganntChart <- ganntChart +
     theme(
       axis.text.y = element_blank(),
