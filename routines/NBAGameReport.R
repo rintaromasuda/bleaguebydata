@@ -1,4 +1,5 @@
 gameId <- "0021900744"
+positions <- c("G", "F", "C")
 
 if(!require(dplyr)) {
   install.packages("dplyr")
@@ -60,6 +61,25 @@ ConvertMinStrToDec <- function(min_str) {
   return(ls)
 }
 
+GetBoxscore <- function(){
+  result <- data.frame()
+  
+  boxscoreUrl <- paste0("https://stats.nba.com/stats/boxscoretraditionalv2",
+                        "?StartPeriod=0",
+                        "&EndPeriod=0",
+                        "&StartRange=0",
+                        "&EndRange=0",
+                        "&RangeType=0",
+                        "&GameID=", gameId)
+  result <- GetDataViaApi(boxscoreUrl)
+  result$START_POSITION <- factor(result$START_POSITION, level = positions)
+  result$MINDECIMAL <- ConvertMinStrToDec(result$MIN)
+  result$MINDECIMAL <- ifelse(is.na(result$MINDECIMAL), 0, result$MINDECIMAL)
+  
+  return(result)
+}
+
+
 GetStarterData <- function(targetPeriod){
   # Since there is no perfect way to get start players of each period, we are making some heuristics here.
   # Getting first 30 sec boxscore of each period, we consider 5 players having largets MIN are the starters.
@@ -83,7 +103,7 @@ GetStarterData <- function(targetPeriod){
                         "&RangeType=2",
                         "&GameID=", gameId)
   boxData <- GetDataViaApi(boxscoreUrl)
-  boxData$START_POSITION <- factor(boxData$START_POSITION, level = c("G", "F", "C"))
+  boxData$START_POSITION <- factor(boxData$START_POSITION, level = positions)
   boxData$MINDECIMAL <- ConvertMinStrToDec(boxData$MIN)
 
   if(targetPeriod == 1){
@@ -194,16 +214,42 @@ ganntData %<>%
   dplyr::group_by(TEAM_ID, PLAYER_ID, DATA_TYPE) %>%
   dplyr::mutate(ITERATION = row_number())
 
-ganntChart <- ggplot2::ggplot()
-lastIter <- max(ganntData$ITERATION)
-for(iter in 1:lastIter){
+# Get total boxscore
+boxData <- GetBoxscore()
+
+foo <- function(){
+  ganntChart <- ggplot2::ggplot() +
+    geom_point(data = boxData,
+               ggplot2::aes(x = 0,
+                           y = reorder(PLAYER_ID, MINDECIMAL)),
+               alpha = 0)
+    
+  lastIter <- max(ganntData$ITERATION)
+  for(iter in 1:lastIter){
+    ganntChart <- ganntChart +
+      ggplot2::geom_line(data = subset(ganntData, ITERATION == iter),
+                         ggplot2::aes(x = GAME_TIME_PAST,
+                                      y = PLAYER_ID,
+                                     color = TEAM_ID),
+                         size = 7)
+  }
+  
   ganntChart <- ganntChart +
-    ggplot2::geom_line(data = subset(ganntData, ITERATION == iter),
-                       ggplot2::aes(x = GAME_TIME_PAST,
-                                    y = PLAYER_ID,
-                                   color = TEAM_ID),
-                       size = 7)
+    geom_text(data = boxData,
+              ggplot2::aes(x = -10,
+                           y = reorder(PLAYER_ID, MINDECIMAL),
+                           label = PLAYER_NAME),
+              hjust = 0)
+  
+  ganntChart <- ganntChart +
+    theme(
+      axis.text.y = element_blank(),
+      legend.title = element_blank(),
+      legend.position="top",
+      strip.background = element_blank(),
+      strip.text.x = element_blank()
+    ) +
+    facet_wrap(~TEAM_ID, nrow = 2, scales = "free")
+  print(ganntChart)
 }
-ganntChart <- ganntChart +
-  facet_wrap(~TEAM_ID, nrow = 2, scales = "free")
-print(ganntChart)
+foo()
