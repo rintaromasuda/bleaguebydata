@@ -127,7 +127,10 @@ GetStarterData <- function(targetPeriod){
 ########
 # Main #
 ########
-# Get Play-by-Play data
+
+#########################
+# Get Play-by-Play data #
+#########################
 playByPlayUrl <- paste0("https://stats.nba.com/stats/playbyplayv2",
                         "?StartPeriod=0",
                         "&EndPeriod=0",
@@ -154,9 +157,33 @@ playData$SCOREMARGIN_DECIMAL <- ifelse(playData$SCOREMARGIN == "NULL", NA,
 playData[1,]$SCOREMARGIN_DECIMAL <- 0
 playData %<>%
   tidyr::fill(SCOREMARGIN_DECIMAL) %>%
+  mutate(VISITOR_SCOREMARGIN_DECIMAL = -1 * SCOREMARGIN_DECIMAL) %>%
   as.data.frame()
 
-# Create data for gantt chart period by period
+######################
+# Create team master #
+######################
+home <- playData %>%
+  filter(HOMEDESCRIPTION != "NULL" & VISITORDESCRIPTION == "NULL") %>%
+  filter(PLAYER1_TEAM_ID != "NULL" & PLAYER1_TEAM_NICKNAME != "NULL") %>%
+  summarize(TEAM_ID = first(PLAYER1_TEAM_ID),
+            TEAM_NAME = first(PLAYER1_TEAM_NICKNAME)) %>%
+  mutate(TEAM_TYPE = "Home") %>%
+  as.data.frame()
+
+visitor <- playData %>%
+  filter(HOMEDESCRIPTION == "NULL" & VISITORDESCRIPTION != "NULL") %>%
+  filter(PLAYER1_TEAM_ID != "NULL" & PLAYER1_TEAM_NICKNAME != "NULL") %>%
+  summarize(TEAM_ID = first(PLAYER1_TEAM_ID),
+            TEAM_NAME = first(PLAYER1_TEAM_NICKNAME)) %>%
+  mutate(TEAM_TYPE = "Visitor") %>%
+  as.data.frame()
+
+teamData <- rbind(home, visitor)
+
+###########################
+# Create gantt chart data #
+###########################
 ganntData <- data.frame()
 for(targetPeriod in 1:max(playData$PERIOD)){
   print(paste0("Target Period -> ", targetPeriod))
@@ -165,7 +192,9 @@ for(targetPeriod in 1:max(playData$PERIOD)){
   firstGameTime <- dplyr::first(periodPlayData$GAME_TIME_PAST)
   lastGameTime <- dplyr::last(periodPlayData$GAME_TIME_PAST)
   firstScoreMargin <- dplyr::first(periodPlayData$SCOREMARGIN_DECIMAL)
+  firstVisitorScoreMargin <- dplyr::first(periodPlayData$VISITOR_SCOREMARGIN_DECIMAL)
   lastScoreMargin <- dplyr::last(periodPlayData$SCOREMARGIN_DECIMAL)
+  lastVisitorScoreMargin <- dplyr::last(periodPlayData$VISITOR_SCOREMARGIN_DECIMAL)
   # Get starters of the period
   starterData <- GetStarterData(targetPeriod)
   print(head(starterData, 10))
@@ -173,6 +202,7 @@ for(targetPeriod in 1:max(playData$PERIOD)){
   periodGanntData$DATA_TYPE <- "In"
   periodGanntData$GAME_TIME_PAST <- firstGameTime
   periodGanntData$SCOREMARGIN <- firstScoreMargin
+  periodGanntData$VISITOR_SCOREMARGIN <- firstVisitorScoreMargin
   
   # Get all substitions of the period
   for(i in 1:nrow(periodPlayData)) {
@@ -185,7 +215,8 @@ for(targetPeriod in 1:max(playData$PERIOD)){
                            PLAYER_ID = row$PLAYER1_ID,
                            DATA_TYPE = "Out",
                            GAME_TIME_PAST = row$GAME_TIME_PAST,
-                           SCOREMARGIN = row$SCOREMARGIN_DECIMAL))
+                           SCOREMARGIN = row$SCOREMARGIN_DECIMAL,
+                           VISITOR_SCOREMARGIN = row$VISITOR_SCOREMARGIN_DECIMAL))
       # Player in
       periodGanntData <- rbind(periodGanntData,
                          data.frame(
@@ -193,7 +224,8 @@ for(targetPeriod in 1:max(playData$PERIOD)){
                            PLAYER_ID = row$PLAYER2_ID,
                            DATA_TYPE = "In",
                            GAME_TIME_PAST = row$GAME_TIME_PAST,
-                           SCOREMARGIN = row$SCOREMARGIN_DECIMAL))
+                           SCOREMARGIN = row$SCOREMARGIN_DECIMAL,
+                           VISITOR_SCOREMARGIN = row$VISITOR_SCOREMARGIN_DECIMAL))
     }
   }
 
@@ -220,7 +252,8 @@ for(targetPeriod in 1:max(playData$PERIOD)){
                         PLAYER_ID = onCourtData$PLAYER_ID,
                         DATA_TYPE = "Out",
                         GAME_TIME_PAST = lastGameTime,
-                        SCOREMARGIN = lastScoreMargin))
+                        SCOREMARGIN = lastScoreMargin,
+                        VISITOR_SCOREMARGIN = lastVisitorScoreMargin))
 
   # Add the period data to the total
   ganntData <- rbind(ganntData, periodGanntData)
@@ -232,12 +265,16 @@ ganntData %<>%
   dplyr::group_by(TEAM_ID, PLAYER_ID, DATA_TYPE) %>%
   dplyr::mutate(ITERATION = row_number())
 
-# Get per-duration stats
+############################
+# Create per-duration data #
+############################
 inData <- subset(ganntData, DATA_TYPE == "In")
 outData <- subset(ganntData, DATA_TYPE == "Out")
 durationData <- merge(inData, outData, by = c("TEAM_ID", "PLAYER_ID", "ITERATION"))
 durationData$X <- durationData$GAME_TIME_PAST.x + (durationData$GAME_TIME_PAST.y - durationData$GAME_TIME_PAST.x) / 2
-durationData$NET <- durationData$SCOREMARGIN.y - durationData$SCOREMARGIN.x
+durationData$NET <- ifelse(durationData$TEAM_ID == teamData[teamData$TEAM_TYPE == "Home", "TEAM_ID"], 
+                           durationData$SCOREMARGIN.y - durationData$SCOREMARGIN.x,
+                           durationData$VISITOR_SCOREMARGIN.y - durationData$VISITOR_SCOREMARGIN.x)
 
 # Get total boxscore
 boxData <- GetBoxscore()
