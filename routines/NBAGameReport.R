@@ -164,8 +164,13 @@ playData$SCOREMARGIN_DECIMAL <- ifelse(playData$SCOREMARGIN == "NULL", NA,
 playData[1,]$SCOREMARGIN_DECIMAL <- 0
 playData %<>%
   tidyr::fill(SCOREMARGIN_DECIMAL) %>%
-  mutate(VISITOR_SCOREMARGIN_DECIMAL = -1 * SCOREMARGIN_DECIMAL) %>%
   as.data.frame()
+playData %<>%
+  group_by(GAME_TIME_PAST) %>%
+  mutate(SCOREMARGIN_BYCLOCK = last(SCOREMARGIN_DECIMAL)) %>%
+  as.data.frame()
+playData$VISITOR_SCOREMARGIN_DECIMAL = -1 * playData$SCOREMARGIN_DECIMAL
+playData$VISITOR_SCOREMARGIN_BYCLOCK = -1 * playData$SCOREMARGIN_BYCLOCK
 
 ######################
 # Create team master #
@@ -198,10 +203,10 @@ for(targetPeriod in 1:max(playData$PERIOD)){
   periodPlayData <- subset(playData, PERIOD == targetPeriod)
   firstGameTime <- dplyr::first(periodPlayData$GAME_TIME_PAST)
   lastGameTime <- dplyr::last(periodPlayData$GAME_TIME_PAST)
-  firstScoreMargin <- dplyr::first(periodPlayData$SCOREMARGIN_DECIMAL)
-  firstVisitorScoreMargin <- dplyr::first(periodPlayData$VISITOR_SCOREMARGIN_DECIMAL)
-  lastScoreMargin <- dplyr::last(periodPlayData$SCOREMARGIN_DECIMAL)
-  lastVisitorScoreMargin <- dplyr::last(periodPlayData$VISITOR_SCOREMARGIN_DECIMAL)
+  firstScoreMargin <- dplyr::first(periodPlayData$SCOREMARGIN_BYCLOCK)
+  firstVisitorScoreMargin <- dplyr::first(periodPlayData$VISITOR_SCOREMARGIN_BYCLOCK)
+  lastScoreMargin <- dplyr::last(periodPlayData$SCOREMARGIN_BYCLOCK)
+  lastVisitorScoreMargin <- dplyr::last(periodPlayData$VISITOR_SCOREMARGIN_BYCLOCK)
   # Get starters of the period
   starterData <- GetStarterData(targetPeriod)
   print(head(starterData, 10))
@@ -222,8 +227,8 @@ for(targetPeriod in 1:max(playData$PERIOD)){
                            PLAYER_ID = row$PLAYER1_ID,
                            DATA_TYPE = "Out",
                            GAME_TIME_PAST = row$GAME_TIME_PAST,
-                           SCOREMARGIN = row$SCOREMARGIN_DECIMAL,
-                           VISITOR_SCOREMARGIN = row$VISITOR_SCOREMARGIN_DECIMAL))
+                           SCOREMARGIN = row$SCOREMARGIN_BYCLOCK,
+                           VISITOR_SCOREMARGIN = row$VISITOR_SCOREMARGIN_BYCLOCK))
       # Player in
       periodGanntData <- rbind(periodGanntData,
                          data.frame(
@@ -231,8 +236,8 @@ for(targetPeriod in 1:max(playData$PERIOD)){
                            PLAYER_ID = row$PLAYER2_ID,
                            DATA_TYPE = "In",
                            GAME_TIME_PAST = row$GAME_TIME_PAST,
-                           SCOREMARGIN = row$SCOREMARGIN_DECIMAL,
-                           VISITOR_SCOREMARGIN = row$VISITOR_SCOREMARGIN_DECIMAL))
+                           SCOREMARGIN = row$SCOREMARGIN_BYCLOCK,
+                           VISITOR_SCOREMARGIN = row$VISITOR_SCOREMARGIN_BYCLOCK))
     }
   }
 
@@ -329,3 +334,4 @@ foo <- function(){
   print(ganntChart)
 }
 foo()
+ggsave("NBA.jpg", width = 6, height = 9)
