@@ -55,20 +55,28 @@ GetDataViaApi <- function(url){
   return(result)
 }
 
-ConvertMinStrToDec <- function(min_str) {
+ConvertMinStrToDec <- function(min_str){
   Convert <- function(item) {
     min <- as.numeric(item[1])
     min <- min + as.numeric(item[2]) / 60
     round(min, 2)
   }
 
-  ls <- sapply(stringr::str_split(min_str, ":"), Convert)
-  return(ls)
+  array <- sapply(stringr::str_split(min_str, ":"), Convert)
+  return(array)
+}
+
+GetShortName <- function(name){
+  Convert <- function(items){
+    stringr::str_c(items[-1], collapse = " ")
+  }
+  array <- sapply(stringr::str_split(name," "), Convert)
+  return(array)
 }
 
 GetBoxscore <- function(){
   result <- data.frame()
-  
+
   boxscoreUrl <- paste0("https://stats.nba.com/stats/boxscoretraditionalv2",
                         "?StartPeriod=0",
                         "&EndPeriod=0",
@@ -80,10 +88,10 @@ GetBoxscore <- function(){
   result$START_POSITION <- factor(result$START_POSITION, level = positions)
   result$MINDECIMAL <- ConvertMinStrToDec(result$MIN)
   result$MINDECIMAL <- ifelse(is.na(result$MINDECIMAL), 0, result$MINDECIMAL)
-  
+  result$PLAYER_NAME_SHORT <- GetShortName(result$PLAYER_NAME)
+
   return(result)
 }
-
 
 GetStarterData <- function(targetPeriod){
   # Since there is no perfect way to get start players of each period, we are making some heuristics here.
@@ -96,7 +104,6 @@ GetStarterData <- function(targetPeriod){
     startRange <- (48 + ((targetPeriod - 5) * 5)) * 10
   }
   endRange <- startRange + 300 # 30 seconds
-
 
   boxscoreUrl <- paste0("https://stats.nba.com/stats/boxscoretraditionalv2",
                         "?StartPeriod=0",
@@ -203,7 +210,7 @@ for(targetPeriod in 1:max(playData$PERIOD)){
   periodGanntData$GAME_TIME_PAST <- firstGameTime
   periodGanntData$SCOREMARGIN <- firstScoreMargin
   periodGanntData$VISITOR_SCOREMARGIN <- firstVisitorScoreMargin
-  
+
   # Get all substitions of the period
   for(i in 1:nrow(periodPlayData)) {
     row <- periodPlayData[i, ]
@@ -272,7 +279,7 @@ inData <- subset(ganntData, DATA_TYPE == "In")
 outData <- subset(ganntData, DATA_TYPE == "Out")
 durationData <- merge(inData, outData, by = c("TEAM_ID", "PLAYER_ID", "ITERATION"))
 durationData$X <- durationData$GAME_TIME_PAST.x + (durationData$GAME_TIME_PAST.y - durationData$GAME_TIME_PAST.x) / 2
-durationData$NET <- ifelse(durationData$TEAM_ID == teamData[teamData$TEAM_TYPE == "Home", "TEAM_ID"], 
+durationData$NET <- ifelse(durationData$TEAM_ID == teamData[teamData$TEAM_TYPE == "Home", "TEAM_ID"],
                            durationData$SCOREMARGIN.y - durationData$SCOREMARGIN.x,
                            durationData$VISITOR_SCOREMARGIN.y - durationData$VISITOR_SCOREMARGIN.x)
 
@@ -285,7 +292,7 @@ foo <- function(){
                ggplot2::aes(x = 0,
                            y = reorder(PLAYER_ID, MINDECIMAL)),
                alpha = 0)
-    
+
   lastIter <- max(ganntData$ITERATION)
   for(iter in 1:lastIter){
     ganntChart <- ganntChart +
@@ -295,21 +302,22 @@ foo <- function(){
                                      color = TEAM_ID),
                          size = 7)
   }
-  
+
   ganntChart <- ganntChart +
     geom_text(data = boxData,
-              ggplot2::aes(x = -10,
+              ggplot2::aes(x = 0,
                            y = reorder(PLAYER_ID, MINDECIMAL),
-                           label = PLAYER_NAME),
-              hjust = 0)
+                           label = PLAYER_NAME_SHORT),
+              hjust = 1.1)
 
   ganntChart <- ganntChart +
     geom_text(data = durationData,
               ggplot2::aes(x = X,
                            y = PLAYER_ID,
-                           label = NET))  
-    
+                           label = NET))
+
   ganntChart <- ganntChart +
+    coord_cartesian(xlim = c(-5, 48)) +
     theme(
       axis.text.y = element_blank(),
       legend.title = element_blank(),
