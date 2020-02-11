@@ -1,5 +1,18 @@
+########
+# Args #
+########
 gameId <- "0021900744"
+
+#############
+# Variables #
+#############
 positions <- c("G", "F", "C")
+periodData <- data.frame(
+  Period = seq(1, 8),
+  Label = c("Q1", "Q2", "Q3", "Q4", "OT1", "OT2", "OT3", "OT4"),
+  LabelX = c(0, 12, 24, 36, 48, 53, 58, 63) + 3,
+  End = c(12, 24, 36, 48, 53, 58, 63, 68)
+)
 
 if(!require(dplyr)) {
   install.packages("dplyr")
@@ -160,6 +173,9 @@ playData %<>%
   mutate(VISITOR_SCOREMARGIN_DECIMAL = -1 * SCOREMARGIN_DECIMAL) %>%
   as.data.frame()
 
+# Last period
+lastPeriod <- max(playData$PERIOD)
+
 ######################
 # Create team master #
 ######################
@@ -185,7 +201,7 @@ teamData <- rbind(home, visitor)
 # Create gantt chart data #
 ###########################
 ganntData <- data.frame()
-for(targetPeriod in 1:max(playData$PERIOD)){
+for(targetPeriod in 1:lastPeriod){
   print(paste0("Target Period -> ", targetPeriod))
 
   periodPlayData <- subset(playData, PERIOD == targetPeriod)
@@ -275,11 +291,20 @@ durationData$X <- durationData$GAME_TIME_PAST.x + (durationData$GAME_TIME_PAST.y
 durationData$NET <- ifelse(durationData$TEAM_ID == teamData[teamData$TEAM_TYPE == "Home", "TEAM_ID"], 
                            durationData$SCOREMARGIN.y - durationData$SCOREMARGIN.x,
                            durationData$VISITOR_SCOREMARGIN.y - durationData$VISITOR_SCOREMARGIN.x)
+durationData$NET_STR <- ifelse(durationData$NET >= 0,
+                               paste0("+", as.character(durationData$NET)),
+                               as.character(durationData$NET ))
 
 # Get total boxscore
 boxData <- GetBoxscore()
 
+####################
+# Plot gannt chart #
+####################
 foo <- function(){
+
+  xTickBreaks <- periodData[periodData$Period <= lastPeriod, "End"]
+  
   ganntChart <- ggplot2::ggplot() +
     geom_point(data = boxData,
                ggplot2::aes(x = 0,
@@ -298,7 +323,7 @@ foo <- function(){
   
   ganntChart <- ganntChart +
     geom_text(data = boxData,
-              ggplot2::aes(x = -10,
+              ggplot2::aes(x = -5,
                            y = reorder(PLAYER_ID, MINDECIMAL),
                            label = PLAYER_NAME),
               hjust = 0)
@@ -307,9 +332,15 @@ foo <- function(){
     geom_text(data = durationData,
               ggplot2::aes(x = X,
                            y = PLAYER_ID,
-                           label = NET))  
+                           label = NET_STR))  
     
   ganntChart <- ganntChart +
+    labs(x="",
+         y="",
+         title = "Title",
+         subtitle = "Sub title") +
+    scale_x_continuous(breaks=xTickBreaks) +
+    theme_bw() +
     theme(
       axis.text.y = element_blank(),
       legend.title = element_blank(),
@@ -318,6 +349,12 @@ foo <- function(){
       strip.text.x = element_blank()
     ) +
     facet_wrap(~TEAM_ID, nrow = 2, scales = "free")
+  
+  for(period in 1:lastPeriod){
+    ganntChart <- ganntChart +
+      geom_vline(xintercept =  periodData[periodData$Period == period, "End"], linetype="dashed", color = "grey", size=1)
+  }
   print(ganntChart)
 }
 foo()
+ggsave("NBA.jpg", width = 6, height = 9)
