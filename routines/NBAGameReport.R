@@ -68,20 +68,28 @@ GetDataViaApi <- function(url){
   return(result)
 }
 
-ConvertMinStrToDec <- function(min_str) {
+ConvertMinStrToDec <- function(min_str){
   Convert <- function(item) {
     min <- as.numeric(item[1])
     min <- min + as.numeric(item[2]) / 60
     round(min, 2)
   }
 
-  ls <- sapply(stringr::str_split(min_str, ":"), Convert)
-  return(ls)
+  array <- sapply(stringr::str_split(min_str, ":"), Convert)
+  return(array)
+}
+
+GetShortName <- function(name){
+  Convert <- function(items){
+    stringr::str_c(items[-1], collapse = " ")
+  }
+  array <- sapply(stringr::str_split(name," "), Convert)
+  return(array)
 }
 
 GetBoxscore <- function(){
   result <- data.frame()
-  
+
   boxscoreUrl <- paste0("https://stats.nba.com/stats/boxscoretraditionalv2",
                         "?StartPeriod=0",
                         "&EndPeriod=0",
@@ -93,10 +101,10 @@ GetBoxscore <- function(){
   result$START_POSITION <- factor(result$START_POSITION, level = positions)
   result$MINDECIMAL <- ConvertMinStrToDec(result$MIN)
   result$MINDECIMAL <- ifelse(is.na(result$MINDECIMAL), 0, result$MINDECIMAL)
-  
+  result$PLAYER_NAME_SHORT <- GetShortName(result$PLAYER_NAME)
+
   return(result)
 }
-
 
 GetStarterData <- function(targetPeriod){
   # Since there is no perfect way to get start players of each period, we are making some heuristics here.
@@ -109,7 +117,6 @@ GetStarterData <- function(targetPeriod){
     startRange <- (48 + ((targetPeriod - 5) * 5)) * 10
   }
   endRange <- startRange + 300 # 30 seconds
-
 
   boxscoreUrl <- paste0("https://stats.nba.com/stats/boxscoretraditionalv2",
                         "?StartPeriod=0",
@@ -170,8 +177,13 @@ playData$SCOREMARGIN_DECIMAL <- ifelse(playData$SCOREMARGIN == "NULL", NA,
 playData[1,]$SCOREMARGIN_DECIMAL <- 0
 playData %<>%
   tidyr::fill(SCOREMARGIN_DECIMAL) %>%
-  mutate(VISITOR_SCOREMARGIN_DECIMAL = -1 * SCOREMARGIN_DECIMAL) %>%
   as.data.frame()
+playData %<>%
+  group_by(GAME_TIME_PAST) %>%
+  mutate(SCOREMARGIN_BYCLOCK = last(SCOREMARGIN_DECIMAL)) %>%
+  as.data.frame()
+playData$VISITOR_SCOREMARGIN_DECIMAL = -1 * playData$SCOREMARGIN_DECIMAL
+playData$VISITOR_SCOREMARGIN_BYCLOCK = -1 * playData$SCOREMARGIN_BYCLOCK
 
 # Last period
 lastPeriod <- max(playData$PERIOD)
@@ -207,10 +219,10 @@ for(targetPeriod in 1:lastPeriod){
   periodPlayData <- subset(playData, PERIOD == targetPeriod)
   firstGameTime <- dplyr::first(periodPlayData$GAME_TIME_PAST)
   lastGameTime <- dplyr::last(periodPlayData$GAME_TIME_PAST)
-  firstScoreMargin <- dplyr::first(periodPlayData$SCOREMARGIN_DECIMAL)
-  firstVisitorScoreMargin <- dplyr::first(periodPlayData$VISITOR_SCOREMARGIN_DECIMAL)
-  lastScoreMargin <- dplyr::last(periodPlayData$SCOREMARGIN_DECIMAL)
-  lastVisitorScoreMargin <- dplyr::last(periodPlayData$VISITOR_SCOREMARGIN_DECIMAL)
+  firstScoreMargin <- dplyr::first(periodPlayData$SCOREMARGIN_BYCLOCK)
+  firstVisitorScoreMargin <- dplyr::first(periodPlayData$VISITOR_SCOREMARGIN_BYCLOCK)
+  lastScoreMargin <- dplyr::last(periodPlayData$SCOREMARGIN_BYCLOCK)
+  lastVisitorScoreMargin <- dplyr::last(periodPlayData$VISITOR_SCOREMARGIN_BYCLOCK)
   # Get starters of the period
   starterData <- GetStarterData(targetPeriod)
   print(head(starterData, 10))
@@ -219,7 +231,7 @@ for(targetPeriod in 1:lastPeriod){
   periodGanntData$GAME_TIME_PAST <- firstGameTime
   periodGanntData$SCOREMARGIN <- firstScoreMargin
   periodGanntData$VISITOR_SCOREMARGIN <- firstVisitorScoreMargin
-  
+
   # Get all substitions of the period
   for(i in 1:nrow(periodPlayData)) {
     row <- periodPlayData[i, ]
@@ -231,8 +243,8 @@ for(targetPeriod in 1:lastPeriod){
                            PLAYER_ID = row$PLAYER1_ID,
                            DATA_TYPE = "Out",
                            GAME_TIME_PAST = row$GAME_TIME_PAST,
-                           SCOREMARGIN = row$SCOREMARGIN_DECIMAL,
-                           VISITOR_SCOREMARGIN = row$VISITOR_SCOREMARGIN_DECIMAL))
+                           SCOREMARGIN = row$SCOREMARGIN_BYCLOCK,
+                           VISITOR_SCOREMARGIN = row$VISITOR_SCOREMARGIN_BYCLOCK))
       # Player in
       periodGanntData <- rbind(periodGanntData,
                          data.frame(
@@ -240,8 +252,8 @@ for(targetPeriod in 1:lastPeriod){
                            PLAYER_ID = row$PLAYER2_ID,
                            DATA_TYPE = "In",
                            GAME_TIME_PAST = row$GAME_TIME_PAST,
-                           SCOREMARGIN = row$SCOREMARGIN_DECIMAL,
-                           VISITOR_SCOREMARGIN = row$VISITOR_SCOREMARGIN_DECIMAL))
+                           SCOREMARGIN = row$SCOREMARGIN_BYCLOCK,
+                           VISITOR_SCOREMARGIN = row$VISITOR_SCOREMARGIN_BYCLOCK))
     }
   }
 
@@ -288,7 +300,7 @@ inData <- subset(ganntData, DATA_TYPE == "In")
 outData <- subset(ganntData, DATA_TYPE == "Out")
 durationData <- merge(inData, outData, by = c("TEAM_ID", "PLAYER_ID", "ITERATION"))
 durationData$X <- durationData$GAME_TIME_PAST.x + (durationData$GAME_TIME_PAST.y - durationData$GAME_TIME_PAST.x) / 2
-durationData$NET <- ifelse(durationData$TEAM_ID == teamData[teamData$TEAM_TYPE == "Home", "TEAM_ID"], 
+durationData$NET <- ifelse(durationData$TEAM_ID == teamData[teamData$TEAM_TYPE == "Home", "TEAM_ID"],
                            durationData$SCOREMARGIN.y - durationData$SCOREMARGIN.x,
                            durationData$VISITOR_SCOREMARGIN.y - durationData$VISITOR_SCOREMARGIN.x)
 durationData$NET_STR <- ifelse(durationData$NET >= 0,
@@ -303,14 +315,14 @@ boxData <- GetBoxscore()
 ####################
 foo <- function(){
 
-  xTickBreaks <- periodData[periodData$Period <= lastPeriod, "End"]
+  xTickBreaks <- c(0, periodData[periodData$Period <= lastPeriod, "End"])
   
   ganntChart <- ggplot2::ggplot() +
     geom_point(data = boxData,
                ggplot2::aes(x = 0,
                            y = reorder(PLAYER_ID, MINDECIMAL)),
                alpha = 0)
-    
+
   lastIter <- max(ganntData$ITERATION)
   for(iter in 1:lastIter){
     ganntChart <- ganntChart +
@@ -320,12 +332,12 @@ foo <- function(){
                                      color = TEAM_ID),
                          size = 7)
   }
-  
+
   ganntChart <- ganntChart +
     geom_text(data = boxData,
-              ggplot2::aes(x = -5,
+              ggplot2::aes(x = -10,
                            y = reorder(PLAYER_ID, MINDECIMAL),
-                           label = PLAYER_NAME),
+                           label = PLAYER_NAME_SHORT),
               hjust = 0)
 
   ganntChart <- ganntChart +
@@ -349,10 +361,21 @@ foo <- function(){
       strip.text.x = element_blank()
     ) +
     facet_wrap(~TEAM_ID, nrow = 2, scales = "free")
+
+  ganntChart <- ganntChart +
+    geom_vline(xintercept =  0,
+               linetype="dashed",
+               color = "grey",
+               size=1,
+               alpha = 0.7)
   
   for(period in 1:lastPeriod){
     ganntChart <- ganntChart +
-      geom_vline(xintercept =  periodData[periodData$Period == period, "End"], linetype="dashed", color = "grey", size=1)
+      geom_vline(xintercept =  periodData[periodData$Period == period, "End"],
+                 linetype="dashed",
+                 color = "grey",
+                 size=1,
+                 alpha = 0.7)
   }
   print(ganntChart)
 }
