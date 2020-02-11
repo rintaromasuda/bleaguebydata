@@ -1,11 +1,12 @@
 ########
 # Args #
 ########
-gameId <- "0021900744"
+gameId <- "0021900789"
 
 #############
 # Variables #
 #############
+c_japanese_players <- c("1629060", "1629139") # Hachimura, Watanabe
 positions <- c("G", "F", "C")
 periodData <- data.frame(
   Period = seq(1, 8),
@@ -337,14 +338,20 @@ foo <- function(){
     geom_text(data = boxData,
               ggplot2::aes(x = -10,
                            y = reorder(PLAYER_ID, MINDECIMAL),
-                           label = PLAYER_NAME_SHORT),
+                           label = PLAYER_NAME_SHORT,
+                           fontface = ifelse(PLAYER_ID %in% c_japanese_players,
+                                             "bold",
+                                             "plain")),
               hjust = 0)
 
   ganntChart <- ganntChart +
     geom_text(data = durationData,
               ggplot2::aes(x = X,
                            y = PLAYER_ID,
-                           label = NET_STR))  
+                           label = NET_STR,
+                           fontface = ifelse(PLAYER_ID %in% c_japanese_players,
+                                             "bold",
+                                             "plain")))
     
   ganntChart <- ganntChart +
     labs(x="",
