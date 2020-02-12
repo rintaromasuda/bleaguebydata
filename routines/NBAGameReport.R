@@ -6,9 +6,9 @@ gameId <- "0021900789"
 #############
 # Variables #
 #############
-c_japanese_players <- c("1629060", "1629139") # Hachimura, Watanabe
-positions <- c("G", "F", "C")
-periodData <- data.frame(
+c_JpnPlayers <- c("1629060", "1629139") # Hachimura, Watanabe
+c_Positions <- c("G", "F", "C")
+c_PeriodData <- data.frame(
   Period = seq(1, 8),
   Label = c("Q1", "Q2", "Q3", "Q4", "OT1", "OT2", "OT3", "OT4"),
   LabelX = c(0, 12, 24, 36, 48, 53, 58, 63) + 3,
@@ -99,7 +99,7 @@ GetBoxscore <- function(){
                         "&RangeType=0",
                         "&GameID=", gameId)
   result <- GetDataViaApi(boxscoreUrl)
-  result$START_POSITION <- factor(result$START_POSITION, level = positions)
+  result$START_POSITION <- factor(result$START_POSITION, level = c_Positions)
   result$MINDECIMAL <- ConvertMinStrToDec(result$MIN)
   result$MINDECIMAL <- ifelse(is.na(result$MINDECIMAL), 0, result$MINDECIMAL)
   result$PLAYER_NAME_SHORT <- GetShortName(result$PLAYER_NAME)
@@ -129,7 +129,7 @@ GetStarterData <- function(targetPeriod){
                         "&RangeType=2",
                         "&GameID=", gameId)
   boxData <- GetDataViaApi(boxscoreUrl)
-  boxData$START_POSITION <- factor(boxData$START_POSITION, level = positions)
+  boxData$START_POSITION <- factor(boxData$START_POSITION, level = c_Positions)
   boxData$MINDECIMAL <- ConvertMinStrToDec(boxData$MIN)
 
   if(targetPeriod == 1){
@@ -209,6 +209,10 @@ visitor <- playData %>%
   as.data.frame()
 
 teamData <- rbind(home, visitor)
+# Visitor team should be displayed first
+teamData$DISPLAY_TEAM_NAME <- factor(teamData$TEAM_NAME,
+                                     levels = c(teamData[teamData$TEAM_TYPE == "Visitor", "TEAM_NAME"],
+                                                teamData[teamData$TEAM_TYPE == "Home", "TEAM_NAME"]))
 
 ###########################
 # Create gantt chart data #
@@ -294,6 +298,8 @@ ganntData %<>%
   dplyr::group_by(TEAM_ID, PLAYER_ID, DATA_TYPE) %>%
   dplyr::mutate(ITERATION = row_number())
 
+ganntData <- merge(ganntData, teamData, by = "TEAM_ID")
+
 ############################
 # Create per-duration data #
 ############################
@@ -310,13 +316,14 @@ durationData$NET_STR <- ifelse(durationData$NET >= 0,
 
 # Get total boxscore
 boxData <- GetBoxscore()
+boxData <- merge(boxData, teamData, by = "TEAM_ID")
 
 ####################
 # Plot gannt chart #
 ####################
 foo <- function(){
 
-  xTickBreaks <- c(0, periodData[periodData$Period <= lastPeriod, "End"])
+  xTickBreaks <- c(0, c_PeriodData[c_PeriodData$Period <= lastPeriod, "End"])
   
   ganntChart <- ggplot2::ggplot() +
     geom_point(data = boxData,
@@ -330,7 +337,7 @@ foo <- function(){
       ggplot2::geom_line(data = subset(ganntData, ITERATION == iter),
                          ggplot2::aes(x = GAME_TIME_PAST,
                                       y = PLAYER_ID,
-                                     color = TEAM_ID),
+                                     color = DISPLAY_TEAM_NAME),
                          size = 7)
   }
 
@@ -339,7 +346,7 @@ foo <- function(){
               ggplot2::aes(x = -10,
                            y = reorder(PLAYER_ID, MINDECIMAL),
                            label = PLAYER_NAME_SHORT,
-                           fontface = ifelse(PLAYER_ID %in% c_japanese_players,
+                           fontface = ifelse(PLAYER_ID %in% c_JpnPlayers,
                                              "bold",
                                              "plain")),
               hjust = 0)
@@ -349,7 +356,7 @@ foo <- function(){
               ggplot2::aes(x = X,
                            y = PLAYER_ID,
                            label = NET_STR,
-                           fontface = ifelse(PLAYER_ID %in% c_japanese_players,
+                           fontface = ifelse(PLAYER_ID %in% c_JpnPlayers,
                                              "bold",
                                              "plain")))
     
@@ -378,7 +385,7 @@ foo <- function(){
   
   for(period in 1:lastPeriod){
     ganntChart <- ganntChart +
-      geom_vline(xintercept =  periodData[periodData$Period == period, "End"],
+      geom_vline(xintercept =  c_PeriodData[c_PeriodData$Period == period, "End"],
                  linetype="dashed",
                  color = "grey",
                  size=1,
