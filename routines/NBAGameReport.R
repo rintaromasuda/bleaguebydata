@@ -1,7 +1,7 @@
 ########
 # Args #
 ########
-gameId <- "0021900789"
+gameId <- "0021900811"
 
 #############
 # Variables #
@@ -395,3 +395,30 @@ foo <- function(){
 }
 foo()
 ggsave("NBA.jpg", width = 6, height = 9)
+
+################
+# Twitter Post #
+################
+for(player in c_JpnPlayers){
+  box <- subset(boxData, PLAYER_ID == player)
+  if(nrow(box) > 0){
+    cat(box[, "PLAYER_NAME"])
+    cat("\n")
+    cat(paste0(box[, "MIN"], " MIN"))
+    cat("\n")
+    cat(paste0(box[, "PTS"], " PTS",
+               " (FG ", box[, "FGM"], "/", box[, "FGA"], ",",
+               " 3P ", box[, "FG3M"], "/", box[, "FG3A"], ",",
+               " FT ", box[, "FTM"], "/", box[, "FTA"], ")"))
+    cat("\n")
+    cat(paste0(box[, "REB"], " REB",
+               " (OR/DR ", box[, "OREB"], "/", box[, "DREB"], ")"))
+    cat("\n")
+    cat(paste0(box[, "STL"], " STL"))
+    cat("\n")
+    cat(paste0(box[, "BLK"], " BLK"))
+    cat("\n")
+    cat(ifelse(box[, "PLUS_MINUS"] >= 0, "+", ""))
+    cat(box[, "PLUS_MINUS"])
+  }
+}
