@@ -1,11 +1,14 @@
 ########
 # Args #
 ########
-gameId <- "0021900811"
+arg_GameId <- "0021900811"
 
 #############
 # Variables #
 #############
+c_League <- "00"
+c_Season <- "2019-20"
+c_SeasonType <- "Regular+Season"
 c_JpnPlayers <- c("1629060", "1629139") # Hachimura, Watanabe
 c_Positions <- c("G", "F", "C")
 c_PeriodData <- data.frame(
@@ -97,7 +100,7 @@ GetBoxscore <- function(){
                         "&StartRange=0",
                         "&EndRange=0",
                         "&RangeType=0",
-                        "&GameID=", gameId)
+                        "&GameID=", arg_GameId)
   result <- GetDataViaApi(boxscoreUrl)
   result$START_POSITION <- factor(result$START_POSITION, level = c_Positions)
   result$MINDECIMAL <- ConvertMinStrToDec(result$MIN)
@@ -127,7 +130,7 @@ GetStarterData <- function(targetPeriod){
                         "&EndRange=0",
                         as.character(endRange),
                         "&RangeType=2",
-                        "&GameID=", gameId)
+                        "&GameID=", arg_GameId)
   boxData <- GetDataViaApi(boxscoreUrl)
   boxData$START_POSITION <- factor(boxData$START_POSITION, level = c_Positions)
   boxData$MINDECIMAL <- ConvertMinStrToDec(boxData$MIN)
@@ -145,6 +148,18 @@ GetStarterData <- function(targetPeriod){
   return(result[, c("TEAM_ID", "PLAYER_ID")])
 }
 
+GetGameData <- function(teamId){
+  gameLogUrl <- paste0("https://stats.nba.com/stats/teamgamelog",
+                       "?DateFrom=",
+                       "&DateTo=",
+                       "&LeagueID=", c_League,
+                       "&Season=", c_Season,
+                       "&SeasonType=", c_SeasonType,
+                       "&TeamID=", teamId)
+  data <- GetDataViaApi(gameLogUrl)
+  return(subset(data, Game_ID == arg_GameId))
+}
+
 ########
 # Main #
 ########
@@ -155,16 +170,12 @@ GetStarterData <- function(targetPeriod){
 playByPlayUrl <- paste0("https://stats.nba.com/stats/playbyplayv2",
                         "?StartPeriod=0",
                         "&EndPeriod=0",
-                        "&GameID=", gameId)
+                        "&GameID=", arg_GameId)
 playData <- GetDataViaApi(playByPlayUrl)
 playData$PERIOD <- as.integer(playData$PERIOD)
 playData$EVENTNUM <- as.integer(playData$EVENTNUM)
 
 # Pre-proces Play-by-Play data
-playData %<>%
-  dplyr::arrange(EVENTNUM) %>%
-  as.data.frame()
-
 playData$PCTIME_DECIMAL <- ConvertMinStrToDec(playData$PCTIMESTRING)
 playData$PERIOD_TIME_PAST <- ifelse(playData$PERIOD <= 4,
                                     12 - playData$PCTIME_DECIMAL,
@@ -172,6 +183,11 @@ playData$PERIOD_TIME_PAST <- ifelse(playData$PERIOD <= 4,
 playData$GAME_TIME_PAST <- ifelse(playData$PERIOD <= 4,
                                   playData$PERIOD_TIME_PAST + ((playData$PERIOD - 1) * 12),
                                   playData$PERIOD_TIME_PAST + 48 + ((playData$PERIOD - 5) * 5))
+
+playData %<>%
+  dplyr::arrange(GAME_TIME_PAST, PRERIOD, EVENTNUM) %>%
+  as.data.frame()
+
 playData$SCOREMARGIN_DECIMAL <- ifelse(playData$SCOREMARGIN == "NULL", NA,
                                       ifelse(playData$SCOREMARGIN == "TIE", 0,
                                              as.integer(playData$SCOREMARGIN)))
@@ -213,6 +229,10 @@ teamData <- rbind(home, visitor)
 teamData$DISPLAY_TEAM_NAME <- factor(teamData$TEAM_NAME,
                                      levels = c(teamData[teamData$TEAM_TYPE == "Visitor", "TEAM_NAME"],
                                                 teamData[teamData$TEAM_TYPE == "Home", "TEAM_NAME"]))
+#################
+# Get Game Info #
+#################
+gameData <- GetGameData(teamData[teamData$TEAM_TYPE == "Home", "TEAM_ID"])
 
 ###########################
 # Create gantt chart data #
@@ -422,3 +442,9 @@ for(player in c_JpnPlayers){
     cat(box[, "PLUS_MINUS"])
   }
 }
+
+playData %>%
+  filter(!is.na(PERIOD) & !is.na(PCTIMESTRING)) %>%
+  group_by(PERIOD, PCTIMESTRING) %>%
+  summarize(SCOREMARGIN_BYCLOCK = last(SCOREMARGIN_DECIMAL)) %>%
+  View()
