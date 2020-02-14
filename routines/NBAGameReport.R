@@ -333,6 +333,7 @@ durationData$NET <- ifelse(durationData$TEAM_ID == teamData[teamData$TEAM_TYPE =
 durationData$NET_STR <- ifelse(durationData$NET >= 0,
                                paste0("+", as.character(durationData$NET)),
                                as.character(durationData$NET ))
+durationData$DISPLAY_TEAM_NAME <- durationData$DISPLAY_TEAM_NAME.x
 
 # Get total boxscore
 boxData <- GetBoxscore()
@@ -344,7 +345,7 @@ boxData <- merge(boxData, teamData, by = "TEAM_ID")
 foo <- function(){
 
   xTickBreaks <- c(0, c_PeriodData[c_PeriodData$Period <= lastPeriod, "End"])
-  
+
   ganntChart <- ggplot2::ggplot() +
     geom_point(data = boxData,
                ggplot2::aes(x = 0,
@@ -379,7 +380,7 @@ foo <- function(){
                            fontface = ifelse(PLAYER_ID %in% c_JpnPlayers,
                                              "bold",
                                              "plain")))
-    
+
   ganntChart <- ganntChart +
     labs(x="",
          y="",
@@ -394,7 +395,7 @@ foo <- function(){
       strip.background = element_blank(),
       strip.text.x = element_blank()
     ) +
-    facet_wrap(~TEAM_ID, nrow = 2, scales = "free")
+    facet_wrap(~DISPLAY_TEAM_NAME, nrow = 2, scales = "free")
 
   ganntChart <- ganntChart +
     geom_vline(xintercept =  0,
@@ -402,7 +403,7 @@ foo <- function(){
                color = "grey",
                size=1,
                alpha = 0.7)
-  
+
   for(period in 1:lastPeriod){
     ganntChart <- ganntChart +
       geom_vline(xintercept =  c_PeriodData[c_PeriodData$Period == period, "End"],
@@ -442,9 +443,3 @@ for(player in c_JpnPlayers){
     cat(box[, "PLUS_MINUS"])
   }
 }
-
-playData %>%
-  filter(!is.na(PERIOD) & !is.na(PCTIMESTRING)) %>%
-  group_by(PERIOD, PCTIMESTRING) %>%
-  summarize(SCOREMARGIN_BYCLOCK = last(SCOREMARGIN_DECIMAL)) %>%
-  View()
