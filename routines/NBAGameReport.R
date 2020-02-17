@@ -106,7 +106,7 @@ GetBoxscore <- function(){
                         "&GameID=", arg_GameId)
   result <- GetDataViaApi(boxscoreUrl)
   result$START_POSITION <- factor(result$START_POSITION, level = c_Positions)
-  result$MINDECIMAL <- ConvertMinStrToDec(result$MIN)
+  result$MINDECIMAL <- suppressWarnings(ConvertMinStrToDec(result$MIN))
   result$MINDECIMAL <- ifelse(is.na(result$MINDECIMAL), 0, result$MINDECIMAL)
   result$PLAYER_NAME_SHORT <- GetShortName(result$PLAYER_NAME)
 
@@ -344,16 +344,20 @@ durationData$NET <- ifelse(durationData$TEAM_ID == teamData[teamData$TEAM_TYPE =
 durationData$NET_STR <- ifelse(durationData$NET >= 0,
                                paste0("+", as.character(durationData$NET)),
                                as.character(durationData$NET ))
-<<<<<<< HEAD
 durationData$DATA_TYPE.x <- NULL
 durationData$DATA_TYPE.y <- NULL
 durationData$SCOREMARGIN.x <- NULL
 durationData$SCOREMARGIN.y <- NULL
 durationData$VISITOR_SCOREMARGIN.x <- NULL
 durationData$VISITOR_SCOREMARGIN.y <- NULL
-=======
-durationData$DISPLAY_TEAM_NAME <- durationData$DISPLAY_TEAM_NAME.x
->>>>>>> f21771a4a9374838abb5db9e44e8a34104a7d32e
+durationData$GAME_TIME_PAST_IN <- durationData$GAME_TIME_PAST.x
+durationData$GAME_TIME_PAST_OUT <- durationData$GAME_TIME_PAST.y
+durationData$GAME_TIME_PAST.x <-NULL
+durationData$TEAM_NAME.x <-NULL
+durationData$TEAM_TYPE.x <-NULL
+durationData$GAME_TIME_PAST.y <-NULL
+durationData$TEAM_NAME.y <-NULL
+durationData$TEAM_TYPE.y <-NULL
 
 ################
 # Get Boxscore #
@@ -364,7 +368,7 @@ boxData <- merge(boxData, teamData, by = "TEAM_ID")
 ####################
 # Plot gannt chart #
 ####################
-foo <- function(){
+plotGanntChart <- function(){
 
   xTickBreaks <- c(0, c_PeriodData[c_PeriodData$Period <= lastPeriod, "End"])
 
@@ -436,7 +440,7 @@ foo <- function(){
   }
   print(ganntChart)
 }
-foo()
+plotGanntChart()
 ggsave("NBA.jpg", width = 6, height = 9)
 
 ################
