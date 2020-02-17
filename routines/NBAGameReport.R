@@ -18,6 +18,9 @@ c_PeriodData <- data.frame(
   End = c(12, 24, 36, 48, 53, 58, 63, 68)
 )
 
+############
+# Settings #
+############
 if(!require(dplyr)) {
   install.packages("dplyr")
   library(dplyr)
@@ -160,9 +163,9 @@ GetGameData <- function(teamId){
   return(subset(data, Game_ID == arg_GameId))
 }
 
-########
-# Main #
-########
+print("##################")
+print("# Start Main()...#")
+print("##################")
 
 #########################
 # Get Play-by-Play data #
@@ -183,18 +186,26 @@ playData$PERIOD_TIME_PAST <- ifelse(playData$PERIOD <= 4,
 playData$GAME_TIME_PAST <- ifelse(playData$PERIOD <= 4,
                                   playData$PERIOD_TIME_PAST + ((playData$PERIOD - 1) * 12),
                                   playData$PERIOD_TIME_PAST + 48 + ((playData$PERIOD - 5) * 5))
-
+# Order Play-by-Play data by game-clock
 playData %<>%
-  dplyr::arrange(GAME_TIME_PAST, PRERIOD, EVENTNUM) %>%
+  dplyr::arrange(GAME_TIME_PAST, PERIOD, EVENTNUM) %>%
   as.data.frame()
 
 playData$SCOREMARGIN_DECIMAL <- ifelse(playData$SCOREMARGIN == "NULL", NA,
-                                      ifelse(playData$SCOREMARGIN == "TIE", 0,
-                                             as.integer(playData$SCOREMARGIN)))
-playData[1,]$SCOREMARGIN_DECIMAL <- 0
+                                       ifelse(playData$SCOREMARGIN == "TIE", 0, 
+                                              suppressWarnings(as.integer(playData$SCOREMARGIN))))
+if(!is.na(playData[1, ]$SCOREMARGIN_DECIMAL)){
+  print(playData)
+  stop("Invalid Play-by-Play data")
+}
+
+playData[1,]$SCOREMARGIN_DECIMAL <- 0 # First one should be 0 so that we can fill the followings
 playData %<>%
   tidyr::fill(SCOREMARGIN_DECIMAL) %>%
   as.data.frame()
+
+# We get last score margin PER game clock here. This is necessary to handle the case
+# when substitions happen when free-throw is going on
 playData %<>%
   group_by(GAME_TIME_PAST) %>%
   mutate(SCOREMARGIN_BYCLOCK = last(SCOREMARGIN_DECIMAL)) %>%
@@ -235,7 +246,7 @@ teamData$DISPLAY_TEAM_NAME <- factor(teamData$TEAM_NAME,
 gameData <- GetGameData(teamData[teamData$TEAM_TYPE == "Home", "TEAM_ID"])
 
 ###########################
-# Create gantt chart data #
+# Create Gantt Chart Data #
 ###########################
 ganntData <- data.frame()
 for(targetPeriod in 1:lastPeriod){
@@ -325,7 +336,7 @@ ganntData <- merge(ganntData, teamData, by = "TEAM_ID")
 ############################
 inData <- subset(ganntData, DATA_TYPE == "In")
 outData <- subset(ganntData, DATA_TYPE == "Out")
-durationData <- merge(inData, outData, by = c("TEAM_ID", "PLAYER_ID", "ITERATION"))
+durationData <- merge(inData, outData, by = c("TEAM_ID", "DISPLAY_TEAM_NAME", "PLAYER_ID", "ITERATION"))
 durationData$X <- durationData$GAME_TIME_PAST.x + (durationData$GAME_TIME_PAST.y - durationData$GAME_TIME_PAST.x) / 2
 durationData$NET <- ifelse(durationData$TEAM_ID == teamData[teamData$TEAM_TYPE == "Home", "TEAM_ID"],
                            durationData$SCOREMARGIN.y - durationData$SCOREMARGIN.x,
@@ -333,8 +344,16 @@ durationData$NET <- ifelse(durationData$TEAM_ID == teamData[teamData$TEAM_TYPE =
 durationData$NET_STR <- ifelse(durationData$NET >= 0,
                                paste0("+", as.character(durationData$NET)),
                                as.character(durationData$NET ))
+durationData$DATA_TYPE.x <- NULL
+durationData$DATA_TYPE.y <- NULL
+durationData$SCOREMARGIN.x <- NULL
+durationData$SCOREMARGIN.y <- NULL
+durationData$VISITOR_SCOREMARGIN.x <- NULL
+durationData$VISITOR_SCOREMARGIN.y <- NULL
 
-# Get total boxscore
+################
+# Get Boxscore #
+################
 boxData <- GetBoxscore()
 boxData <- merge(boxData, teamData, by = "TEAM_ID")
 
@@ -443,8 +462,6 @@ for(player in c_JpnPlayers){
   }
 }
 
-playData %>%
-  filter(!is.na(PERIOD) & !is.na(PCTIMESTRING)) %>%
-  group_by(PERIOD, PCTIMESTRING) %>%
-  summarize(SCOREMARGIN_BYCLOCK = last(SCOREMARGIN_DECIMAL)) %>%
-  View()
+print("################")
+print("# End Main()...#")
+print("################")
