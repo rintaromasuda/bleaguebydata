@@ -46,6 +46,11 @@ if(!require(jsonlite)) {
   library(jsonlite)
 }
 
+if(!require(wesanderson)) {
+  install.packages("wesanderson")
+  library(wesanderson)
+}
+
 Sys.setlocale(locale = "English")
 
 #############
@@ -434,6 +439,7 @@ plotGanntChart <- function(){
          title = plotTitle,
          subtitle = "The numbers show Plus/Minus of the player in the duration") +
     scale_x_continuous(breaks=xTickBreaks) +
+    scale_color_manual(values=wes_palette(name= "Moonrise3")) +
     theme_bw() +
     theme(
       axis.text.y = element_blank(),
