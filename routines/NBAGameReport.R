@@ -143,8 +143,8 @@ GetStarterData <- function(targetPeriod){
     result <- boxData[!is.na(boxData$START_POSITION),]
   }else if(targetPeriod > 1){
     result <- boxData %>%
-      dplyr::group_by(TEAM_ID) %>%
-      dplyr::top_n(n = 5, wt = MINDECIMAL) %>%
+      group_by(TEAM_ID) %>%
+      top_n(n = 5, wt = MINDECIMAL) %>%
       as.data.frame()
   }
 
@@ -188,7 +188,7 @@ playData$GAME_TIME_PAST <- ifelse(playData$PERIOD <= 4,
                                   playData$PERIOD_TIME_PAST + 48 + ((playData$PERIOD - 5) * 5))
 # Order Play-by-Play data by game-clock
 playData %<>%
-  dplyr::arrange(GAME_TIME_PAST, PERIOD, EVENTNUM) %>%
+  arrange(GAME_TIME_PAST, PERIOD, EVENTNUM) %>%
   as.data.frame()
 
 playData$SCOREMARGIN_DECIMAL <- ifelse(playData$SCOREMARGIN == "NULL", NA,
@@ -325,9 +325,9 @@ for(targetPeriod in 1:lastPeriod){
 
 # Pre-process gannt chart data
 ganntData %<>%
-  dplyr::arrange(TEAM_ID, PLAYER_ID, GAME_TIME_PAST) %>%
-  dplyr::group_by(TEAM_ID, PLAYER_ID, DATA_TYPE) %>%
-  dplyr::mutate(ITERATION = row_number())
+  arrange(TEAM_ID, PLAYER_ID, GAME_TIME_PAST) %>%
+  group_by(TEAM_ID, PLAYER_ID, DATA_TYPE) %>%
+  mutate(ITERATION = row_number())
 
 ganntData <- merge(ganntData, teamData, by = "TEAM_ID")
 
@@ -365,52 +365,72 @@ durationData$TEAM_TYPE.y <-NULL
 boxData <- GetBoxscore()
 boxData <- merge(boxData, teamData, by = "TEAM_ID")
 
-####################
-# Plot gannt chart #
-####################
+############################################################
+# Plot gannt chart. This is where everything get together. #
+############################################################
 plotGanntChart <- function(){
 
   xTickBreaks <- c(0, c_PeriodData[c_PeriodData$Period <= lastPeriod, "End"])
-
-  ganntChart <- ggplot2::ggplot() +
+  plotTitle <- paste0(teamData[teamData$TEAM_TYPE == "Visitor", "DISPLAY_TEAM_NAME"],
+                     " vs. ",
+                     teamData[teamData$TEAM_TYPE == "Home", "DISPLAY_TEAM_NAME"],
+                     " (",
+                     gameData$GAME_DATE,
+                     ")")
+  
+  ganntChart <- ggplot()
+  
+  # This is only for lininig up everyone in y-axis
+  ganntChart <- ganntChart+
     geom_point(data = boxData,
-               ggplot2::aes(x = 0,
-                           y = reorder(PLAYER_ID, MINDECIMAL)),
+               aes(x = 0,
+                   y = reorder(PLAYER_ID, MINDECIMAL)),
                alpha = 0)
 
+  # This is to draw all the bars
   lastIter <- max(ganntData$ITERATION)
   for(iter in 1:lastIter){
     ganntChart <- ganntChart +
       ggplot2::geom_line(data = subset(ganntData, ITERATION == iter),
-                         ggplot2::aes(x = GAME_TIME_PAST,
-                                      y = PLAYER_ID,
-                                     color = DISPLAY_TEAM_NAME),
+                         aes(x = GAME_TIME_PAST,
+                             y = PLAYER_ID,
+                             color = DISPLAY_TEAM_NAME),
                          size = 7)
   }
 
+  # This is to draw players' names
   ganntChart <- ganntChart +
     geom_text(data = boxData,
-              ggplot2::aes(x = -10,
-                           y = reorder(PLAYER_ID, MINDECIMAL),
-                           label = PLAYER_NAME_SHORT,
-                           fontface = ifelse(PLAYER_ID %in% c_JpnPlayers,
-                                             "bold",
-                                             "plain")),
+              aes(x = -10,
+                  y = reorder(PLAYER_ID, MINDECIMAL),
+                  label = PLAYER_NAME_SHORT,
+                  fontface = ifelse(PLAYER_ID %in% c_JpnPlayers, "bold", "plain")),
               hjust = 0)
 
+  # This is to draw information on the bars
   ganntChart <- ganntChart +
     geom_text(data = durationData,
-              ggplot2::aes(x = X,
-                           y = PLAYER_ID,
-                           label = NET_STR,
-                           fontface = ifelse(PLAYER_ID %in% c_JpnPlayers,
-                                             "bold",
-                                             "plain")))
+              aes(x = X,
+                  y = PLAYER_ID,
+                  label = NET_STR,
+                  fontface = ifelse(PLAYER_ID %in% c_JpnPlayers, "bold", "plain")))
 
+  # This is to draw lines in-between periods
+  for(period in 0:lastPeriod){
+    xIntercept = ifelse(period == 0, 0, c_PeriodData[c_PeriodData$Period == period, "End"])
+    ganntChart <- ganntChart +
+      geom_vline(xintercept =  xIntercept,
+                 linetype="dashed",
+                 color = "grey",
+                 size=1,
+                 alpha = 0.7)
+  }
+  
+  # This is for all the visual adjustments
   ganntChart <- ganntChart +
     labs(x="",
          y="",
-         title = "Title",
+         title = plotTitle,
          subtitle = "Sub title") +
     scale_x_continuous(breaks=xTickBreaks) +
     theme_bw() +
@@ -423,25 +443,16 @@ plotGanntChart <- function(){
     ) +
     facet_wrap(~DISPLAY_TEAM_NAME, nrow = 2, scales = "free")
 
-  ganntChart <- ganntChart +
-    geom_vline(xintercept =  0,
-               linetype="dashed",
-               color = "grey",
-               size=1,
-               alpha = 0.7)
-
-  for(period in 1:lastPeriod){
-    ganntChart <- ganntChart +
-      geom_vline(xintercept =  c_PeriodData[c_PeriodData$Period == period, "End"],
-                 linetype="dashed",
-                 color = "grey",
-                 size=1,
-                 alpha = 0.7)
-  }
+  # Print the chart
   print(ganntChart)
 }
 plotGanntChart()
-ggsave("NBA.jpg", width = 6, height = 9)
+ggsave(paste0("NBAGanntChart_",
+              gsub(" ", "_", gameData$MATCHUP),
+              gsub(" ", "_", gameData$GAME_DATE),
+              ".jpg"),
+       width = 6,
+       height = 9)
 
 ################
 # Twitter Post #
@@ -469,10 +480,7 @@ for(player in c_JpnPlayers){
     cat(box[, "PLUS_MINUS"])
   }
 }
-<<<<<<< HEAD
 
 print("################")
 print("# End Main()...#")
 print("################")
-=======
->>>>>>> f21771a4a9374838abb5db9e44e8a34104a7d32e
