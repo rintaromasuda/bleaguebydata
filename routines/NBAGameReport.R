@@ -1,21 +1,23 @@
 ########
 # Args #
 ########
-arg_GameId <- "2021900441"
-arg_League <- "20"
+arg_GameId <- "0021900811"
+arg_League <- "00"
+
+arg_Season <- "2019-20"
+arg_SeasonType <- "Regular+Season"
 
 #############
 # Variables #
 #############
-c_Season <- "2019-20"
-c_SeasonType <- "Regular+Season"
+overTimeLength <- ifelse(arg_League == "00", 5, 2)
+periodEnds <- c(c(12, 24, 36, 48), ((seq(1, 4) * overTimeLength) + 48))
 c_JpnPlayers <- c("1629060", "1629139", "1629819") # Hachimura, Watanabe, Baba
 c_Positions <- c("G", "F", "C")
 c_PeriodData <- data.frame(
   Period = seq(1, 8),
   Label = c("Q1", "Q2", "Q3", "Q4", "OT1", "OT2", "OT3", "OT4"),
-  LabelX = c(0, 12, 24, 36, 48, 53, 58, 63) + 3,
-  End = c(12, 24, 36, 48, 53, 58, 63, 68)
+  End = periodEnds
 )
 
 ############
@@ -126,10 +128,10 @@ GetStarterData <- function(targetPeriod){
   if(targetPeriod <= 4){
     startRange <- (targetPeriod - 1) * 12 * 60 * 10
   }else{
-    startRange <- (48 + ((targetPeriod - 5) * 5)) * 10
+    startRange <- (48 + ((targetPeriod - 5) * overTimeLength)) * 60 * 10
   }
   endRange <- startRange + 300 # 30 seconds
-
+  
   boxscoreUrl <- paste0("https://stats.nba.com/stats/boxscoretraditionalv2",
                         "?StartPeriod=0",
                         "&EndPeriod=0",
@@ -139,6 +141,7 @@ GetStarterData <- function(targetPeriod){
                         as.character(endRange),
                         "&RangeType=2",
                         "&GameID=", arg_GameId)
+  print(boxscoreUrl)
   boxData <- GetDataViaApi(boxscoreUrl)
   boxData$START_POSITION <- factor(boxData$START_POSITION, level = c_Positions)
   boxData$MINDECIMAL <- ConvertMinStrToDec(boxData$MIN)
@@ -161,8 +164,8 @@ GetGameData <- function(teamId){
                        "?DateFrom=",
                        "&DateTo=",
                        "&LeagueID=", arg_League,
-                       "&Season=", c_Season,
-                       "&SeasonType=", c_SeasonType,
+                       "&Season=", arg_Season,
+                       "&SeasonType=", arg_SeasonType,
                        "&TeamID=", teamId)
   data <- GetDataViaApi(gameLogUrl)
   return(subset(data, Game_ID == arg_GameId))
@@ -187,10 +190,10 @@ playData$EVENTNUM <- as.integer(playData$EVENTNUM)
 playData$PCTIME_DECIMAL <- ConvertMinStrToDec(playData$PCTIMESTRING)
 playData$PERIOD_TIME_PAST <- ifelse(playData$PERIOD <= 4,
                                     12 - playData$PCTIME_DECIMAL,
-                                    5 - playData$PCTIME_DECIMAL)
+                                    overTimeLength - playData$PCTIME_DECIMAL)
 playData$GAME_TIME_PAST <- ifelse(playData$PERIOD <= 4,
                                   playData$PERIOD_TIME_PAST + ((playData$PERIOD - 1) * 12),
-                                  playData$PERIOD_TIME_PAST + 48 + ((playData$PERIOD - 5) * 5))
+                                  playData$PERIOD_TIME_PAST + 48 + ((playData$PERIOD - 5) * overTimeLength))
 # Order Play-by-Play data by game-clock
 playData %<>%
   arrange(GAME_TIME_PAST, PERIOD, EVENTNUM) %>%
