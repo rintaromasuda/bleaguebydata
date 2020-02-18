@@ -243,7 +243,8 @@ teamData$DISPLAY_TEAM_NAME <- factor(teamData$TEAM_NAME,
 #################
 # Get Game Info #
 #################
-gameData <- GetGameData(teamData[teamData$TEAM_TYPE == "Home", "TEAM_ID"])
+homeGameLog <- GetGameData(teamData[teamData$TEAM_TYPE == "Home", "TEAM_ID"])
+visitorGameLog <- GetGameData(teamData[teamData$TEAM_TYPE == "Visitor", "TEAM_ID"])
 
 ###########################
 # Create Gantt Chart Data #
@@ -375,7 +376,7 @@ plotGanntChart <- function(){
                      " vs. ",
                      teamData[teamData$TEAM_TYPE == "Home", "DISPLAY_TEAM_NAME"],
                      " (",
-                     gameData$GAME_DATE,
+                     homeGameLog$GAME_DATE,
                      ")")
   
   ganntChart <- ggplot()
@@ -431,7 +432,7 @@ plotGanntChart <- function(){
     labs(x="",
          y="",
          title = plotTitle,
-         subtitle = "Sub title") +
+         subtitle = "The numbers show Plus/Minus of the player in the duration") +
     scale_x_continuous(breaks=xTickBreaks) +
     theme_bw() +
     theme(
@@ -448,8 +449,8 @@ plotGanntChart <- function(){
 }
 plotGanntChart()
 ggsave(paste0("NBAGanntChart_",
-              gsub(" ", "_", gameData$MATCHUP),
-              gsub(" ", "_", gameData$GAME_DATE),
+              gsub(" ", "_", homeGameLog$MATCHUP),
+              gsub(" ", "_", homeGameLog$GAME_DATE),
               ".jpg"),
        width = 6,
        height = 9)
@@ -460,6 +461,23 @@ ggsave(paste0("NBAGanntChart_",
 for(player in c_JpnPlayers){
   box <- subset(boxData, PLAYER_ID == player)
   if(nrow(box) > 0){
+    matchup <- paste0(teamData[teamData$TEAM_TYPE == "Visitor", "DISPLAY_TEAM_NAME"],
+                      " vs. ",
+                      teamData[teamData$TEAM_TYPE == "Home", "DISPLAY_TEAM_NAME"],
+                      " (",
+                      homeGameLog$GAME_DATE,
+                      ")")
+    cat(matchup)
+    cat("\n")
+
+    score <- paste0(visitorGameLog$PTS,
+                      " - ",
+                     homeGameLog$PTS)
+    cat(score)
+    cat("\n")
+    
+    
+    cat("\n")
     cat(box[, "PLAYER_NAME"])
     cat("\n")
     cat(paste0(box[, "MIN"], " MIN"))
@@ -477,7 +495,10 @@ for(player in c_JpnPlayers){
     cat(paste0(box[, "BLK"], " BLK"))
     cat("\n")
     cat(ifelse(box[, "PLUS_MINUS"] >= 0, "+", ""))
-    cat(box[, "PLUS_MINUS"])
+    cat(box[, "PLUS_MINUS"])l
+
+    cat("\n")
+    cat("#NBA")
   }
 }
 
