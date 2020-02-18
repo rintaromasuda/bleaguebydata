@@ -350,20 +350,24 @@ durationData$NET <- ifelse(durationData$TEAM_ID == teamData[teamData$TEAM_TYPE =
 durationData$NET_STR <- ifelse(durationData$NET >= 0,
                                paste0("+", as.character(durationData$NET)),
                                as.character(durationData$NET ))
-durationData$DATA_TYPE.x <- NULL
-durationData$DATA_TYPE.y <- NULL
-durationData$SCOREMARGIN.x <- NULL
-durationData$SCOREMARGIN.y <- NULL
-durationData$VISITOR_SCOREMARGIN.x <- NULL
-durationData$VISITOR_SCOREMARGIN.y <- NULL
 durationData$GAME_TIME_PAST_IN <- durationData$GAME_TIME_PAST.x
 durationData$GAME_TIME_PAST_OUT <- durationData$GAME_TIME_PAST.y
-durationData$GAME_TIME_PAST.x <-NULL
-durationData$TEAM_NAME.x <-NULL
-durationData$TEAM_TYPE.x <-NULL
-durationData$GAME_TIME_PAST.y <-NULL
-durationData$TEAM_NAME.y <-NULL
-durationData$TEAM_TYPE.y <-NULL
+durationData %<>%
+  select(TEAM_ID,
+         DISPLAY_TEAM_NAME,
+         PLAYER_ID,
+         ITERATION,
+         X,
+         NET,
+         NET_STR,
+         GAME_TIME_PAST_IN,
+         GAME_TIME_PAST_OUT) %>%
+  as.data.frame()
+
+#merge(durationData,
+#      playData[, c("PLAYER1_ID", "EVENTMSGTYPE", "EVENTMSGACTIONTYPE", "GAME_TIME_PAST")],
+#      by.x = c("PLAYER_ID"),
+#      by.y = c("PLAYER1_ID"))
 
 ################
 # Get Boxscore #
@@ -484,7 +488,10 @@ for(player in c_JpnPlayers){
     
     
     cat("\n")
-    cat(box[, "PLAYER_NAME"])
+    
+    name <- ifelse(player == "1629060", "八村塁",
+                   ifelse(player == "1629139", "渡邊雄太", box[, "PLAYER_NAME"]))
+    cat(name)
     cat("\n")
     cat(paste0(box[, "MIN"], " MIN"))
     cat("\n")
@@ -501,10 +508,11 @@ for(player in c_JpnPlayers){
     cat(paste0(box[, "BLK"], " BLK"))
     cat("\n")
     cat(ifelse(box[, "PLUS_MINUS"] >= 0, "+", ""))
-    cat(box[, "PLUS_MINUS"])l
+    cat(box[, "PLUS_MINUS"])
 
     cat("\n")
     cat("#NBA")
+    cat("\n")
   }
 }
 
