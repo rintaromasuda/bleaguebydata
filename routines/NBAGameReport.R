@@ -1,15 +1,15 @@
 ########
 # Args #
 ########
-arg_GameId <- "0021900811"
+arg_GameId <- "2021900441"
+arg_League <- "20"
 
 #############
 # Variables #
 #############
-c_League <- "00"
 c_Season <- "2019-20"
 c_SeasonType <- "Regular+Season"
-c_JpnPlayers <- c("1629060", "1629139") # Hachimura, Watanabe
+c_JpnPlayers <- c("1629060", "1629139", "1629819") # Hachimura, Watanabe, Baba
 c_Positions <- c("G", "F", "C")
 c_PeriodData <- data.frame(
   Period = seq(1, 8),
@@ -160,7 +160,7 @@ GetGameData <- function(teamId){
   gameLogUrl <- paste0("https://stats.nba.com/stats/teamgamelog",
                        "?DateFrom=",
                        "&DateTo=",
-                       "&LeagueID=", c_League,
+                       "&LeagueID=", arg_League,
                        "&Season=", c_Season,
                        "&SeasonType=", c_SeasonType,
                        "&TeamID=", teamId)
@@ -511,7 +511,8 @@ for(player in c_JpnPlayers){
     cat("\n")
     
     name <- ifelse(player == "1629060", "八村塁",
-                   ifelse(player == "1629139", "渡邊雄太", box[, "PLAYER_NAME"]))
+                   ifelse(player == "1629139", "渡邊雄太",
+                          ifelse(player == "1629819", "馬場雄大", box[, "PLAYER_NAME"])))
     cat(name)
     cat("\n")
     cat(paste0(box[, "MIN"], " MIN"))
