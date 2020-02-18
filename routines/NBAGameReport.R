@@ -218,6 +218,15 @@ playData %<>%
 playData$VISITOR_SCOREMARGIN_DECIMAL = -1 * playData$SCOREMARGIN_DECIMAL
 playData$VISITOR_SCOREMARGIN_BYCLOCK = -1 * playData$SCOREMARGIN_BYCLOCK
 
+# We get positive delta of score margin for each row so that we can see how many points each row gets
+playData %<>%
+  arrange(GAME_TIME_PAST, PERIOD, EVENTNUM) %>%
+  mutate(SCOREMARGIN_DELTA = ifelse(SCOREMARGIN_DECIMAL > lag(SCOREMARGIN_DECIMAL, 1),
+                                    SCOREMARGIN_DECIMAL - lag(SCOREMARGIN_DECIMAL, 1, NA), 0),
+         VISITOR_SCOREMARGIN_DELTA = ifelse(VISITOR_SCOREMARGIN_DECIMAL > lag(VISITOR_SCOREMARGIN_DECIMAL, 1),
+                                            VISITOR_SCOREMARGIN_DECIMAL - lag(VISITOR_SCOREMARGIN_DECIMAL, 1, NA), 0)) %>%
+  as.data.frame()
+
 # Last period
 lastPeriod <- max(playData$PERIOD)
 
@@ -364,10 +373,22 @@ durationData %<>%
          GAME_TIME_PAST_OUT) %>%
   as.data.frame()
 
-#merge(durationData,
-#      playData[, c("PLAYER1_ID", "EVENTMSGTYPE", "EVENTMSGACTIONTYPE", "GAME_TIME_PAST")],
-#      by.x = c("PLAYER_ID"),
-#      by.y = c("PLAYER1_ID"))
+durationPtsData <- merge(durationData,
+                         playData[, c("PLAYER1_ID",
+                                      "SCOREMARGIN_DELTA",
+                                      "VISITOR_SCOREMARGIN_DELTA",
+                                      "GAME_TIME_PAST")],
+                         by.x = c("PLAYER_ID"),
+                         by.y = c("PLAYER1_ID")) %>%
+                   filter(GAME_TIME_PAST_IN <= GAME_TIME_PAST & GAME_TIME_PAST < GAME_TIME_PAST_OUT) %>%
+                   group_by(PLAYER_ID, ITERATION) %>%
+                   summarize(PTS = sum(SCOREMARGIN_DELTA) + sum(VISITOR_SCOREMARGIN_DELTA)) %>%
+                   as.data.frame()
+durationData <- merge(durationData, durationPtsData, by = c("PLAYER_ID", "ITERATION"), all.y = TRUE)
+durationData$TEXT <- ifelse(!is.na(durationData$PTS) & durationData$PTS > 0,
+                            paste0(as.character(durationData$PTS),
+                                   "p"),
+                            "")
 
 ################
 # Get Boxscore #
@@ -422,7 +443,7 @@ plotGanntChart <- function(){
     geom_text(data = durationData,
               aes(x = X,
                   y = PLAYER_ID,
-                  label = NET_STR,
+                  label = TEXT,
                   fontface = ifelse(PLAYER_ID %in% c_JpnPlayers, "bold", "plain")))
 
   # This is to draw lines in-between periods
@@ -441,9 +462,9 @@ plotGanntChart <- function(){
     labs(x="",
          y="",
          title = plotTitle,
-         subtitle = "The numbers show Plus/Minus of the player in the duration") +
+         subtitle = "The numbers show points made in the duration") +
     scale_x_continuous(breaks=xTickBreaks) +
-    scale_color_manual(values=wes_palette(name= "Moonrise3")) +
+    scale_color_manual(values=wes_palette(name= "GrandBudapest2")) +
     theme_bw() +
     theme(
       axis.text.y = element_blank(),
