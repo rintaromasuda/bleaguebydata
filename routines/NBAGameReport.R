@@ -1,8 +1,8 @@
 ########
 # Args #
 ########
-arg_GameId <- "0021900811"
-arg_League <- "00"
+arg_GameId <- "2021900462"
+arg_League <- "20"
 
 arg_Season <- "2019-20"
 arg_SeasonType <- "Regular+Season"
@@ -535,6 +535,19 @@ for(player in c_JpnPlayers){
     cat(ifelse(box[, "PLUS_MINUS"] >= 0, "+", ""))
     cat(box[, "PLUS_MINUS"])
 
+    if(arg_League == "00"){
+      url <- paste0("https://stats.nba.com/game/",
+                    arg_GameId,
+                    "/")
+    }else{
+      url <- paste0("https://stats.gleague.nba.com/game/",
+                    arg_GameId,
+                    "/")
+    }
+    cat("\n")
+    cat(url)
+    
+    cat("\n")
     cat("\n")
     cat("#NBA")
     cat("\n")
