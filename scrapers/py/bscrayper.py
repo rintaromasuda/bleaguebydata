@@ -1,5 +1,6 @@
 import requests as rq
 from bs4 import BeautifulSoup
+import json as js
 
 def main():
     res = rq.get("https://www.bleague.jp/schedule/?tab=1&year=2019&event=2&club=&setuFrom=1&setuTo=36")
@@ -16,9 +17,11 @@ def main():
             if (start_index > -1):
                 content = script_tag.text[start_index:]
                 start_index = content.find("{\"")
-                end_index = content.find("};")
-                json_str = content[start_index:end_index]
-        break
+                end_index = content.find("\"};")
+                json_str = content[start_index:end_index] + "\"}"
+                json_dct = js.loads(json_str)
+                print(json_dct['ScheduleKey'])
+                break
 
 if __name__ == "__main__":
     main()
