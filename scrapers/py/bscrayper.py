@@ -1,6 +1,8 @@
 import requests as rq
 from bs4 import BeautifulSoup
 import json as js
+import pandas as pd
+import numpy as np
 
 def main():
     res = rq.get("https://www.bleague.jp/schedule/?tab=1&year=2019&event=2&club=&setuFrom=1&setuTo=36")
@@ -20,8 +22,11 @@ def main():
                 end_index = content.find("\"};")
                 json_str = content[start_index:end_index] + "\"}"
                 json_dct = js.loads(json_str)
-                print(json_dct['ScheduleKey'])
-                break
+
+                for action in json_dct['PlayByPlays']:
+                    print(action['PlayText'])
+
+        break
 
 if __name__ == "__main__":
     main()
