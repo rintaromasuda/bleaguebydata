@@ -23,8 +23,12 @@ def main():
                 json_str = content[start_index:end_index] + "\"}"
                 json_dct = js.loads(json_str)
 
+                df_pbyp = pd.DataFrame()
                 for action in json_dct['PlayByPlays']:
-                    print(action['PlayText'])
+                    df_pbyp = df_pbyp.append(action, ignore_index=True)
+                df_pbyp.to_csv("play_by_play_sig.csv", header=True, index=False, sep=",", encoding="utf_8_sig")
+
+                break
 
         break
 
