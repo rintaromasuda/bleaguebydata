@@ -1,9 +1,8 @@
 ########
 # Args #
 ########
-arg_GameId <- "2021900462"
+arg_GameId <- "2021900474"
 arg_League <- "20"
-
 arg_Season <- "2019-20"
 arg_SeasonType <- "Regular+Season"
 
@@ -526,7 +525,7 @@ for(player in c_JpnPlayers){
                " FT ", box[, "FTM"], "/", box[, "FTA"], ")"))
     cat("\n")
     cat(paste0(box[, "REB"], " REB",
-               " (OR/DR ", box[, "OREB"], "/", box[, "DREB"], ")"))
+               " (OR|DR ", box[, "OREB"], "|", box[, "DREB"], ")"))
     cat("\n")
     cat(paste0(box[, "STL"], " STL"))
     cat("\n")
@@ -545,9 +544,8 @@ for(player in c_JpnPlayers){
                     "/")
     }
     cat("\n")
-    cat(url)
-    
     cat("\n")
+    cat(url)
     cat("\n")
     cat("#NBA")
     cat("\n")

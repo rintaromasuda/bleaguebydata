@@ -8,6 +8,8 @@ def main():
     res = rq.get("https://www.bleague.jp/schedule/?tab=1&year=2019&event=2&club=&setuFrom=1&setuTo=36")
     soup = BeautifulSoup(res.content, 'html.parser')
 
+    df_pbyp = pd.DataFrame()
+
     for div_tag in soup.find_all('div', {'class': "state_link btn report"}):
         detail_link = div_tag.a['href']
         res = rq.get(detail_link)
@@ -23,14 +25,12 @@ def main():
                 json_str = content[start_index:end_index] + "\"}"
                 json_dct = js.loads(json_str)
 
-                df_pbyp = pd.DataFrame()
                 for action in json_dct['PlayByPlays']:
                     df_pbyp = df_pbyp.append(action, ignore_index=True)
-                df_pbyp.to_csv("play_by_play_sig.csv", header=True, index=False, sep=",", encoding="utf_8_sig")
-
+                # <script>
                 break
 
-        break
+    df_pbyp.to_csv("play_by_play_20200222.csv", header=True, index=False, sep=",")
 
 if __name__ == "__main__":
     main()
