@@ -25,10 +25,17 @@ def main():
                 json_str = content[start_index:end_index] + "\"}"
                 json_dct = js.loads(json_str)
 
-                for action in json_dct['PlayByPlays']:
-                    df_pbyp = df_pbyp.append(action, ignore_index=True)
+                df = pd.DataFrame(json_dct['PlayByPlays'])
+                df_pbyp = df_pbyp.append(df, ignore_index=True)
+                #print(df_pbyp.head())
+
+                # for action in json_dct['PlayByPlays']:
+                #     df_pbyp = df_pbyp.append(action, ignore_index=True)
                 # <script>
                 break
+        
+        # per game
+        #break
 
     df_pbyp.to_csv("play_by_play_20200222.csv", header=True, index=False, sep=",")
 

@@ -1,7 +1,7 @@
 ########
 # Args #
 ########
-arg_GameId <- "2021900474"
+arg_GameId <- "2021900480"
 arg_League <- "20"
 arg_Season <- "2019-20"
 arg_SeasonType <- "Regular+Season"
@@ -527,10 +527,13 @@ for(player in c_JpnPlayers){
     cat(paste0(box[, "REB"], " REB",
                " (OR|DR ", box[, "OREB"], "|", box[, "DREB"], ")"))
     cat("\n")
+    cat(paste0(box[, "AST"], " AST"))
+    cat("\n")
     cat(paste0(box[, "STL"], " STL"))
     cat("\n")
     cat(paste0(box[, "BLK"], " BLK"))
     cat("\n")
+    cat("± ")
     cat(ifelse(box[, "PLUS_MINUS"] >= 0, "+", ""))
     cat(box[, "PLUS_MINUS"])
 
