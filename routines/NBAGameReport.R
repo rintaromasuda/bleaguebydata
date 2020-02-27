@@ -1,8 +1,8 @@
 ########
 # Args #
 ########
-arg_GameId <- "2021900480"
-arg_League <- "20"
+arg_GameId <- "0021900866"
+arg_League <- "00"
 arg_Season <- "2019-20"
 arg_SeasonType <- "Regular+Season"
 
@@ -115,7 +115,11 @@ GetBoxscore <- function(){
   result$MINDECIMAL <- suppressWarnings(ConvertMinStrToDec(result$MIN))
   result$MINDECIMAL <- ifelse(is.na(result$MINDECIMAL), 0, result$MINDECIMAL)
   result$PLAYER_NAME_SHORT <- GetShortName(result$PLAYER_NAME)
-
+  
+  result$PLAYER_NAME_JPN <- ifelse(result$PLAYER_ID == "1629060", "八村塁",
+                                   ifelse(result$PLAYER_ID == "1629139", "渡邊雄太",
+                                          ifelse(result$PLAYER_ID == "1629819", "馬場雄大", NA)))
+  
   return(result)
 }
 
@@ -436,7 +440,7 @@ plotGanntChart <- function(){
     geom_text(data = boxData,
               aes(x = -10,
                   y = reorder(PLAYER_ID, MINDECIMAL),
-                  label = PLAYER_NAME_SHORT,
+                  label = ifelse(is.na(PLAYER_NAME_JPN), PLAYER_NAME_SHORT, PLAYER_NAME_JPN),
                   fontface = ifelse(PLAYER_ID %in% c_JpnPlayers, "bold", "plain")),
               hjust = 0)
 
@@ -470,6 +474,7 @@ plotGanntChart <- function(){
     theme_bw() +
     theme(
       axis.text.y = element_blank(),
+      axis.ticks.y = element_blank(),
       legend.title = element_blank(),
       legend.position="top",
       strip.background = element_blank(),
@@ -512,11 +517,10 @@ for(player in c_JpnPlayers){
     
     cat("\n")
     
-    name <- ifelse(player == "1629060", "八村塁",
-                   ifelse(player == "1629139", "渡邊雄太",
-                          ifelse(player == "1629819", "馬場雄大", box[, "PLAYER_NAME"])))
+    name <- box[, "PLAYER_NAME_JPN"]
     cat(name)
     cat("\n")
+    
     cat(paste0(box[, "MIN"], " MIN"))
     cat("\n")
     cat(paste0(box[, "PTS"], " PTS",
@@ -532,6 +536,8 @@ for(player in c_JpnPlayers){
     cat(paste0(box[, "STL"], " STL"))
     cat("\n")
     cat(paste0(box[, "BLK"], " BLK"))
+    cat("\n")
+    cat(paste0(box[, "TO"], " TO"))
     cat("\n")
     cat("± ")
     cat(ifelse(box[, "PLUS_MINUS"] >= 0, "+", ""))
