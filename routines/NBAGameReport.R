@@ -233,6 +233,10 @@ playData %<>%
                                             VISITOR_SCOREMARGIN_DECIMAL - lag(VISITOR_SCOREMARGIN_DECIMAL, 1, NA), 0)) %>%
   as.data.frame()
 
+# Get scores
+playData$HOMESCORE <- suppressWarnings(sapply(stringr::str_split(playData$SCORE, "-"), function(item){return(as.integer(item[2]))}))
+playData$VISITORSCORE <- suppressWarnings(sapply(stringr::str_split(playData$SCORE, "-"), function(item){return(as.integer(item[1]))}))
+
 # Last period
 lastPeriod <- max(playData$PERIOD)
 
@@ -468,7 +472,7 @@ plotGanntChart <- function(){
     labs(x="",
          y="",
          title = plotTitle,
-         subtitle = "The numbers show points made in the duration") +
+         subtitle = "図中の値はその時間帯での得点") +
     scale_x_continuous(breaks=xTickBreaks) +
     scale_color_manual(values=wes_palette(name= "GrandBudapest2")) +
     theme_bw() +
@@ -492,6 +496,74 @@ ggsave(paste0("NBAGanntChart_",
               ".jpg"),
        width = 6,
        height = 9)
+
+#############################
+# Plot pts chart. #
+#############################
+plotPtsChart <- function(){
+  
+  xTickBreaks <- c(0, c_PeriodData[c_PeriodData$Period <= lastPeriod, "End"])
+  plotTitle <- paste0(teamData[teamData$TEAM_TYPE == "Visitor", "DISPLAY_TEAM_NAME"],
+                      " vs. ",
+                      teamData[teamData$TEAM_TYPE == "Home", "DISPLAY_TEAM_NAME"],
+                      " (",
+                      homeGameLog$GAME_DATE,
+                      ")")
+  
+  merged <- merge(playData, teamData, by.x = "PLAYER1_TEAM_ID", by.y = "TEAM_ID")
+  homeData <- subset(merged, TEAM_TYPE == "Home")
+  homeData$SCORE_DECIMAL <- homeData$HOMESCORE
+  visitorData <- subset(merged, TEAM_TYPE == "Visitor")
+  visitorData$SCORE_DECIMAL <- visitorData$VISITORSCORE
+  
+  common_cols <- c("TEAM_TYPE", "DISPLAY_TEAM_NAME","SCORE", "SCORE_DECIMAL", "PERIOD", "GAME_TIME_PAST")
+  gamePtsData <- rbind(
+    homeData[!is.na(homeData$SCORE_DECIMAL), common_cols],
+    visitorData[!is.na(visitorData$SCORE_DECIMAL), common_cols])
+  
+  ptsChart <- ggplot()
+  
+  ptsChart <- ptsChart +
+    geom_line(data = gamePtsData,
+              aes(x = GAME_TIME_PAST,
+                  y = SCORE_DECIMAL,
+                  color = DISPLAY_TEAM_NAME),
+              size = 2) +
+    geom_point(data = gamePtsData,
+              aes(x = GAME_TIME_PAST,
+                  y = SCORE_DECIMAL,
+                  color = DISPLAY_TEAM_NAME),
+              size = 4)
+
+  # This is to draw lines in-between periods
+  for(period in 0:lastPeriod){
+    xIntercept = ifelse(period == 0, 0, c_PeriodData[c_PeriodData$Period == period, "End"])
+    ptsChart <- ptsChart +
+      geom_vline(xintercept =  xIntercept,
+                 linetype="dashed",
+                 color = "grey",
+                 size=1,
+                 alpha = 0.7)
+  }
+    
+  ptsChart <- ptsChart +
+    labs(x="",
+         y="",
+         title = plotTitle,
+         subtitle = "") +
+    scale_x_continuous(breaks=xTickBreaks) +
+    scale_color_manual(values=wes_palette(name= "GrandBudapest2")) +
+    theme_bw() +
+    theme(
+      legend.title = element_blank(),
+      legend.position="top",
+      strip.background = element_blank(),
+      strip.text.x = element_blank()
+    )
+  
+  print(ptsChart)
+}
+plotPtsChart()
 
 ################
 # Twitter Post #
