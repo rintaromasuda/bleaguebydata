@@ -1,8 +1,8 @@
 ########
 # Args #
 ########
-arg_GameId <- "0021900866"
-arg_League <- "00"
+arg_GameId <- "2021900509"
+arg_League <- "20"
 arg_Season <- "2019-20"
 arg_SeasonType <- "Regular+Season"
 
@@ -115,11 +115,11 @@ GetBoxscore <- function(){
   result$MINDECIMAL <- suppressWarnings(ConvertMinStrToDec(result$MIN))
   result$MINDECIMAL <- ifelse(is.na(result$MINDECIMAL), 0, result$MINDECIMAL)
   result$PLAYER_NAME_SHORT <- GetShortName(result$PLAYER_NAME)
-  
+
   result$PLAYER_NAME_JPN <- ifelse(result$PLAYER_ID == "1629060", "八村塁",
                                    ifelse(result$PLAYER_ID == "1629139", "渡邊雄太",
                                           ifelse(result$PLAYER_ID == "1629819", "馬場雄大", NA)))
-  
+
   return(result)
 }
 
@@ -134,7 +134,7 @@ GetStarterData <- function(targetPeriod){
     startRange <- (48 + ((targetPeriod - 5) * overTimeLength)) * 60 * 10
   }
   endRange <- startRange + 300 # 30 seconds
-  
+
   boxscoreUrl <- paste0("https://stats.nba.com/stats/boxscoretraditionalv2",
                         "?StartPeriod=0",
                         "&EndPeriod=0",
@@ -203,7 +203,7 @@ playData %<>%
   as.data.frame()
 
 playData$SCOREMARGIN_DECIMAL <- ifelse(playData$SCOREMARGIN == "NULL", NA,
-                                       ifelse(playData$SCOREMARGIN == "TIE", 0, 
+                                       ifelse(playData$SCOREMARGIN == "TIE", 0,
                                               suppressWarnings(as.integer(playData$SCOREMARGIN))))
 if(!is.na(playData[1, ]$SCOREMARGIN_DECIMAL)){
   print(playData)
@@ -418,9 +418,9 @@ plotGanntChart <- function(){
                      " (",
                      homeGameLog$GAME_DATE,
                      ")")
-  
+
   ganntChart <- ggplot()
-  
+
   # This is only for lininig up everyone in y-axis
   ganntChart <- ganntChart+
     geom_point(data = boxData,
@@ -466,7 +466,7 @@ plotGanntChart <- function(){
                  size=1,
                  alpha = 0.7)
   }
-  
+
   # This is for all the visual adjustments
   ganntChart <- ganntChart +
     labs(x="",
@@ -501,7 +501,7 @@ ggsave(paste0("NBAGanntChart_",
 # Plot pts chart. #
 #############################
 plotPtsChart <- function(){
-  
+
   xTickBreaks <- c(0, c_PeriodData[c_PeriodData$Period <= lastPeriod, "End"])
   plotTitle <- paste0(teamData[teamData$TEAM_TYPE == "Visitor", "DISPLAY_TEAM_NAME"],
                       " vs. ",
@@ -509,20 +509,20 @@ plotPtsChart <- function(){
                       " (",
                       homeGameLog$GAME_DATE,
                       ")")
-  
+
   merged <- merge(playData, teamData, by.x = "PLAYER1_TEAM_ID", by.y = "TEAM_ID")
   homeData <- subset(merged, TEAM_TYPE == "Home")
   homeData$SCORE_DECIMAL <- homeData$HOMESCORE
   visitorData <- subset(merged, TEAM_TYPE == "Visitor")
   visitorData$SCORE_DECIMAL <- visitorData$VISITORSCORE
-  
+
   common_cols <- c("TEAM_TYPE", "DISPLAY_TEAM_NAME","SCORE", "SCORE_DECIMAL", "PERIOD", "GAME_TIME_PAST")
   gamePtsData <- rbind(
     homeData[!is.na(homeData$SCORE_DECIMAL), common_cols],
     visitorData[!is.na(visitorData$SCORE_DECIMAL), common_cols])
-  
+
   ptsChart <- ggplot()
-  
+
   ptsChart <- ptsChart +
     geom_line(data = gamePtsData,
               aes(x = GAME_TIME_PAST,
@@ -545,7 +545,7 @@ plotPtsChart <- function(){
                  size=1,
                  alpha = 0.7)
   }
-    
+
   ptsChart <- ptsChart +
     labs(x="",
          y="",
@@ -560,7 +560,7 @@ plotPtsChart <- function(){
       strip.background = element_blank(),
       strip.text.x = element_blank()
     )
-  
+
   print(ptsChart)
 }
 plotPtsChart()
@@ -585,14 +585,14 @@ for(player in c_JpnPlayers){
                      homeGameLog$PTS)
     cat(score)
     cat("\n")
-    
-    
+
+
     cat("\n")
-    
+
     name <- box[, "PLAYER_NAME_JPN"]
     cat(name)
     cat("\n")
-    
+
     cat(paste0(box[, "MIN"], " MIN"))
     cat("\n")
     cat(paste0(box[, "PTS"], " PTS",
