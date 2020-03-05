@@ -1,8 +1,8 @@
 ########
 # Args #
 ########
-arg_GameId <- "2021900509"
-arg_League <- "20"
+arg_GameId <- "0021900920"
+arg_League <- "00"
 arg_Season <- "2019-20"
 arg_SeasonType <- "Regular+Season"
 
@@ -492,6 +492,7 @@ plotGanntChart <- function(){
 plotGanntChart()
 ggsave(paste0("NBAGanntChart_",
               gsub(" ", "_", homeGameLog$MATCHUP),
+              "_",
               gsub(" ", "_", homeGameLog$GAME_DATE),
               ".jpg"),
        width = 6,
