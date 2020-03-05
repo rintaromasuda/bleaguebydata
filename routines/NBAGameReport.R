@@ -1,7 +1,7 @@
 ########
 # Args #
 ########
-arg_GameId <- "0021900920"
+arg_GameId <- "0021900925"
 arg_League <- "00"
 arg_Season <- "2019-20"
 arg_SeasonType <- "Regular+Season"
@@ -565,6 +565,13 @@ plotPtsChart <- function(){
   print(ptsChart)
 }
 plotPtsChart()
+ggsave(paste0("NBAPointChart_",
+              gsub(" ", "_", homeGameLog$MATCHUP),
+              "_",
+              gsub(" ", "_", homeGameLog$GAME_DATE),
+              ".jpg"),
+       width = 6,
+       height = 9)
 
 ################
 # Twitter Post #
