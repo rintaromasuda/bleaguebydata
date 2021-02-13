@@ -13,7 +13,7 @@ if(!require(jsonlite)) {
   library(jsonlite)
 }
 
-url <- "https://www.bleague.jp/game_detail/?ScheduleKey=4556"
+url <- "https://www.bleague.jp/game_detail/?ScheduleKey=5856"
 page <- xml2::read_html(url, encoding = "utf-8")
 script_tags <- page %>%
   rvest::html_nodes("script") %>%
