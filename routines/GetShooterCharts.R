@@ -52,6 +52,8 @@ plotCharts <- function(targetLeague) {
   df.box.agg$FTR_NUDGE <- ifelse(df.box.agg$FTR_IS_GTE_AVG, 0.4, -0.2)
   df.box.agg$FTR_IS_TARGET <- (df.box.agg$FTA_SD >= 1.7 |
                                  df.box.agg$FTM_SD >= 1.7 |
+                                 (df.box.agg$FTA >= 50 & df.box.agg$FTR >= 0.9) |
+                                 (df.box.agg$FTA >= 50 & df.box.agg$FTR < 0.5) |
                                  df.box.agg$PlayerId %in% c())  
 
   # Visualize
@@ -100,7 +102,7 @@ plotCharts <- function(targetLeague) {
                         y = FTR,
                         label = Player),
                     nudge_y = subset(df.box.agg, FTR_IS_TARGET)$FTR_NUDGE) +
-    scale_y_continuous(labels = scales::percent) +
+    scale_y_continuous(labels = scales::percent, limits = c(0, 1.3)) +
     labs(title = paste(targetSeason, "レギュラシーズン", "フリースロー (", targetLeague, ")"),
          subtitle = "点線はリーグ平均%、点の大きさはその選手の1試合平均得点を表示。",
          x = "試投数",
