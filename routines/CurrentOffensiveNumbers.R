@@ -85,6 +85,42 @@ plotPaintPts(df, "B2")
 ggsave("PaintPts_B2.jpg", width = 6, height = 9)
 
 ###
+# Fast Break
+###
+
+plotFastBreakPts <- function(df, league = "B1"){
+  df <- subset(df, League == league)
+  df %<>%
+    group_by(TeamId, TeamName) %>%
+    mutate(Med = median(PtsFastBreak),
+           Avg = mean(PtsFastBreak),
+           TeamNameN = paste0(TeamName, " (", n(), ")"))
+  
+  ggplot() +
+    geom_boxplot(data = df,
+                 aes(x = reorder(TeamNameN, Med),
+                     y = PtsFastBreak)) +
+    geom_point(data = df,
+               aes(x = reorder(TeamNameN, Med),
+                   y = Avg),
+               shape = 4,
+               color = "blue") +
+    labs(title = paste(targetSeason, "レギュラシーズン", "ファストブレイク得点"),
+         subtitle = "中央値順での並び。xは1試合平均値。()内はデータ内の経過試合数。",
+         x = "",
+         y = "") +
+    theme_gray() +
+    theme(
+      axis.text.y = element_text(size = 12)
+    ) +
+    coord_flip()
+}
+plotFastBreakPts(df)
+ggsave("FastBreakPts_B1.jpg", width = 6, height = 9)
+plotFastBreakPts(df, "B2")
+ggsave("FastBreakPts_B2.jpg", width = 6, height = 9)
+
+###
 # .EFG
 ###
 plotEFG <- function(df, league = "B1"){
@@ -155,4 +191,3 @@ plotTO(df)
 ggsave("TO_B1.jpg", width = 6, height = 9)
 plotTO(df, "B2")
 ggsave("TO_B2.jpg", width = 6, height = 9)
-
