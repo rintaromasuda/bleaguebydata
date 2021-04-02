@@ -45,14 +45,7 @@ server <- function(input, output) {
     
     df_pbyp <- getPlayByPlay(jsonObj)
     df_box <- getBoxScore(jsonObj)
-    View(df_pbyp)
-    df_timeline <- getTimeline(df_pbyp, df_box)
-    
-    View(df_timeline)
-    
-    df <- data.frame(
-        A = seq(1, 1000)
-    )
+    df_timeline <- getTimeline(df_pbyp)
 
     output$distPlot <- renderPlot({
         # generate bins based on input$bins from ui.R
@@ -64,10 +57,76 @@ server <- function(input, output) {
     })
     
     output$myPlot <- renderPlot({
+        # Prepares data for a gannt chart
+        df_gannt <- df_timeline %>%
+            arrange(TeamId, PlayerId, PastMinInGame) %>%
+            group_by(TeamId, PlayerId, Type) %>%
+            mutate(RowNum = row_number())
         
-        ggplot() +
-            geom_boxplot(data = df,
-                         aes(y = A))
+        df_player <- df_box %>%
+            filter(Category == 1 & PeriodCategory == 18) %>% # Player and final boxscore only
+            as.data.frame()
+        
+        gannt <- ggplot()
+        
+        # Fake geom_point to set up Y-axis in order
+        gannt <- gannt +
+            geom_point(data = df_player,
+                      aes(x = 0,
+                          y = PlayerId),
+                      alpha = 0)
+        
+        # Lines between quarters
+        for(min in seq(0, 40, by = 10)){
+            gannt <- gannt +
+                geom_vline(xintercept =  min, linetype="dashed", color = "grey", size=1)
+        }
+        
+        # Lines for OTs
+        for(min in c(40, 45, 50)){
+            if(max(df_gannt$PastMinInGame) > min) {
+                gannt <-
+                    gannt +
+                    geom_vline(xintercept = min + 5, linetype="dashed", color = "grey", size=1)
+            }
+        }
+        
+        # The actual gannt chart part
+        for(iter in 1:max(df_gannt$RowNum)){
+            gannt <- gannt +
+                geom_line(data = subset(df_gannt, RowNum == iter),
+                          aes(x = PastMinInGame,
+                              y = PlayerId,
+                              color = TeamId),
+                          size = 7)
+        }
+        
+        # Player names
+        gannt <- gannt +
+            geom_text(data = df_player,
+                      aes(x = 0,
+                          y = PlayerId,
+                          label = PlayerNameJ),
+                      hjust = -0.1,
+                      size = 4)
+        
+        # Cosmetics
+        gannt <- gannt +
+            labs(x="",
+                 y="",
+                 title = "",
+                 subtitle = "各選手の出場時間帯") +
+            theme_bw() +
+            theme(
+                axis.text.y = element_blank(),
+                legend.title = element_blank(),
+                legend.position="top",
+                strip.background = element_blank(),
+                strip.text.x = element_blank()
+            ) +
+            facet_wrap(~TeamId, nrow = 2, scales = "free")
+        
+        print(gannt)
     })
 }
 
