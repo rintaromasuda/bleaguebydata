@@ -139,16 +139,44 @@ df_pbyp_target %>%
   filter(IsTarget) %>%
   as.data.frame()
 
+length(unique(df_plot$PlayerID1))
+
 ggplot() +
   geom_boxplot(data = df_plot,
                aes(x = as.factor(Period),
                    fill = as.factor(Period),
                    y = Z)) +
-  labs(x = "Q") +
+  labs(x = "クォーター", y = "Z得点") +
   theme(
     legend.position = "none"
   )
 
-length(unique(df_plot$PlayerID1))
-
-View(head(df_plot, 60))
+df_plot %>%
+  group_by(PlayerID1, PlayerNameJ1_Fixed) %>%
+  summarize(FTR_All = max(FTR_Total),
+            Q1 = max(FTR[Period == 1]),
+            Q2 = max(FTR[Period == 2]),
+            Q3 = max(FTR[Period == 3]),
+            Q4 = max(FTR[Period == 4]),
+            Z1 = max(Z[Period == 1]),
+            Z2 = max(Z[Period == 2]),
+            Z3 = max(Z[Period == 3]),
+            Z4 = max(Z[Period == 4])
+            ) %>%
+  mutate(ALL = paste0(as.character(round(FTR_All, 3) * 100), "%"),
+         Q1R = paste0(as.character(round(Q1, 3) * 100), "%"),
+         Q2R = paste0(as.character(round(Q2, 3) * 100), "%"),
+         Q3R = paste0(as.character(round(Q3, 3) * 100), "%"),
+         Q4R = paste0(as.character(round(Q4, 3) * 100), "%"),
+         ) %>%
+  ungroup() %>%
+  select(
+    PlayerNameJ1_Fixed,
+    ALL,
+    Q1R,
+    Q2R,
+    Q3R,
+    Q4R
+  ) %>%
+  kable()
+  

@@ -16,11 +16,12 @@ df.boxscore <- subset(b.games.boxscore, ScheduleKey %in% df$ScheduleKey)
 df.boxscore %<>% # In case a player has two different names
   group_by(PlayerId) %>%
   mutate(Player = last(Player),
+         TeamId = last(TeamId),
          Counter = 1)
 
 df.box.agg <-
   df.boxscore %>%
-  group_by(PlayerId, Player) %>%
+  group_by(PlayerId, Player, TeamId) %>%
   summarise(GP = sum(Counter[MIN > 0]),
             PTS = sum(PTS),
             FGA = sum(FGA),
@@ -46,13 +47,7 @@ FTR_Avg <- sum(df.boxscore$FTM) / sum(df.boxscore$FTA)
 
 df.box.agg$F3GR_IS_GTE_AVG <- (df.box.agg$F3GR >= F3GR_Avg)
 df.box.agg$F3GR_NUDGE <- ifelse(df.box.agg$F3GR_IS_GTE_AVG, 0.4, -0.2)
-df.box.agg$F3GR_IS_TARGET <- (df.box.agg$F3GA_SD >= 1.7 |
-                              df.box.agg$F3GM_SD >= 1.7 |
-                              df.box.agg$PlayerId %in% c(8456,
-                                                         10815,
-                                                         33093,
-                                                         33031,
-                                                         32994))
+df.box.agg$F3GR_IS_TARGET <- (df.box.agg$TeamId == 727)
 df.box.agg$FTR_IS_GTE_AVG <- (df.box.agg$FTR >= FTR_Avg)
 df.box.agg$FTR_NUDGE <- ifelse(df.box.agg$FTR_IS_GTE_AVG, 0.4, -0.2)
 df.box.agg$FTR_IS_TARGET <- (df.box.agg$FTA_SD >= 1.7 |
